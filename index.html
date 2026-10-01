@@ -789,6 +789,7 @@ function showTab(id){
   document.querySelectorAll("section.tab").forEach(s=>s.classList.toggle("active", s.id==="tab-"+id));
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active", b.dataset.tab===id));
   if(id==="hurtig") renderHurtig();
+  if(id==="freser") syncNow();   // hent freser som er endret på en annen enhet
 }
 $("nav").addEventListener("click", e=>{ const b=e.target.closest("button"); if(b) showTab(b.dataset.tab); });
 // tabelloverskriftene låses rett under fanelinja, som kan gå over flere linjer i smalt vindu
