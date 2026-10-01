@@ -75,6 +75,7 @@ ol.bruk{padding-left:22px}ol.bruk li{margin:8px 0}
   <button data-tab="hurtig">Hurtigtabell</button>
   <button data-tab="verdier">Anbefalte verdier</button>
   <button data-tab="freser">Mine freser</button>
+  <button data-tab="minebor">Mine bor</button>
   <button data-tab="oppslag">Oppslag</button>
   <button data-tab="bruk">Bruk</button>
 </nav>
@@ -129,6 +130,7 @@ ol.bruk{padding-left:22px}ol.bruk li{margin:8px 0}
   <div>
     <div class="card">
       <h2>1 Inndata – boring</h2>
+      <label class="row"><span>Bor fra «Mine bor»<small>fyller type, Ø, z, n maks, turtall og mating</small></span><select id="b_drill"><option value="">– velg –</option></select></label>
       <label class="row"><span>Materiale</span><select id="b_mat"></select></label>
       <label class="row"><span>Bortype</span><select id="b_type">
         <option value="0">Tappebor (dybelbor)</option>
@@ -224,6 +226,20 @@ ol.bruk{padding-left:22px}ol.bruk li{margin:8px 0}
 </div>
 </section>
 
+<!-- ================= MINE BOR ================= -->
+<section class="tab" id="tab-minebor">
+<div class="card">
+  <h2>Mine bor – verktøyregister</h2>
+  <div class="toolbar noprint">
+    <button class="btn" onclick="addDrill()">+ Nytt bor</button>
+    <button class="btn sec" onclick="saveDrills()">Lagre</button>
+    <span class="status" id="d_status"></span>
+  </div>
+  <div class="wrap"><table class="data" id="d_table"></table></div>
+  <div class="note">Legg inn borene du faktisk bruker, med turtallet og matingen du har funnet ut at fungerer. «Bruk» fyller Boring-fanen: turtallet legges inn som ønsket turtall, og matingen regnes om til ønsket fn (fn = vf / n). Uten turtall brukes anbefalt turtall og anbefalt mating; mating uten turtall blir ikke brukt. n maks tom = ingen egen grense.</div>
+</div>
+</section>
+
 <!-- ================= OPPSLAG ================= -->
 <section class="tab" id="tab-oppslag">
 <div class="card">
@@ -270,6 +286,7 @@ ol.bruk{padding-left:22px}ol.bruk li{margin:8px 0}
     <li><b>Mating flytter ikke en rett vegg sidelengs:</b> slepefeilen i styringen ligger langs kjøreretningen og runder hjørner (KV = MD32200 POSCTRL_GAIN, forsterkning i posisjonsregulatoren), men flytter ikke veggen. Det du måler midt på siden er skjæring.</li>
     <li><b>Hurtigtabell:</b> alle materialer omregnet til m/min for din spindel – skriv ut og heng ved maskinen. <b>Anbefalte verdier:</b> grunnlaget – endre tall der hvis verktøyprodusenten sier noe annet, så følger kalkulator og hurtigtabell med. Lagre, og ta en JSON-eksport som sikkerhetskopi (lagringen ligger i nettleseren på denne enheten). Samme fil flytter innstillingene mellom PC og telefon: «Importer JSON» leser også DKHH_mating_innstillinger.json fra programmet.</li>
     <li><b>Mine freser:</b> eget register over fresene dine; velg en i kalkulatoren så fylles Ø, z og n maks.</li>
+    <li><b>Mine bor:</b> eget register over borene dine, med turtallet og matingen som fungerer for hvert bor; velg et i Boring så fylles type, Ø, z, n maks, turtall og mating.</li>
     <li><b>Boring:</b> velg materiale, bortype (tappebor, spissbor eller hengselbor), Ø og boraggregatets maks turtall. Ved boring regnes matingen pr. omdreining: <b>vf = fn · n</b>. Hardt tre og plast får lavere turtall (brenning/smelting), ikke lavere fn. Har borhodet fast turtall, legg det inn som «ønsket turtall» – da regnes matingen ut fra det. Spissbor: halv mating de siste millimeterne før gjennombrudd. Dype hull (over 3 × Ø): løft boret ut underveis for spontømming.</li>
   </ol>
   <p class="muted">DKHH – Dag Kjetil H. Hansen · 01.10.2026 · Fila er selvstendig: ingen internett, ingen installasjon. Kopier den dit du vil.</p>
@@ -277,7 +294,7 @@ ol.bruk{padding-left:22px}ol.bruk li{margin:8px 0}
 <div class="card">
   <h2>Synkronisering mellom PC og telefon</h2>
   <div id="s_av">
-    <p>Materialer, freser og boreverdier kan holdes like på flere enheter. De lagres da i en hemmelig «gist» på GitHub-kontoen din. Inndataene i kalkulatoren følger ikke med – de huskes pr. enhet.</p>
+    <p>Materialer, freser, bor og boreverdier kan holdes like på flere enheter. De lagres da i en hemmelig «gist» på GitHub-kontoen din. Inndataene i kalkulatoren følger ikke med – de huskes pr. enhet.</p>
     <ol class="bruk">
       <li>Logg inn på GitHub og åpne <a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=DKHH%20Mating%20synk" target="_blank" rel="noopener">github.com/settings/tokens/new</a>. Sett «Expiration» til «No expiration», la bare <b>gist</b> være krysset av, og trykk «Generate token».</li>
       <li>Kopier nøkkelen (starter med ghp_), lim den inn under og trykk «Koble til».</li>
@@ -398,18 +415,19 @@ const KEY = "dkhh_mating_v1";
 /* ===================== lagring ===================== */
 // HOST = kjører som program (DKHH_Mating.exe): innstillingene ligger i en JSON-fil i stedet for i nettleseren
 const HOST = !!(window.chrome && window.chrome.webview);
-let state = {materials:null, tools:null, bor:null, inp:null};
+let state = {materials:null, tools:null, drills:null, bor:null, inp:null};
 function loadAll(){
   try{ const raw = HOST ? window.__dkhhInit : localStorage.getItem(KEY); if(raw){ const o = JSON.parse(raw); state = Object.assign(state, o); } }catch(e){}
   if(!Array.isArray(state.materials) || !state.materials.length) state.materials = JSON.parse(JSON.stringify(DEF_MAT));
   if(!Array.isArray(state.tools)) state.tools = JSON.parse(JSON.stringify(DEF_TOOLS));
+  if(!Array.isArray(state.drills)) state.drills = [];
   if(!Array.isArray(state.bor) || !state.bor.length) state.bor = JSON.parse(JSON.stringify(DEF_BOR));
   if(!state.inp) state.inp = {};
 }
 function persist(){ try{ const s = JSON.stringify(state); if(HOST) window.chrome.webview.postMessage(s); else localStorage.setItem(KEY, s); return true; }catch(e){ return false; } }
 if(HOST){
   document.querySelector("header p").textContent = "vf = fz · z · n · retningsverdier for VHW-spiralfres · alt lagres i DKHH_mating_innstillinger.json ved siden av programmet";
-  window.chrome.webview.addEventListener("message", e=>{ document.getElementById("m_status").textContent = e.data; document.getElementById("t_status").textContent = e.data; document.getElementById("b_status").textContent = e.data; });
+  window.chrome.webview.addEventListener("message", e=>{ document.getElementById("m_status").textContent = e.data; document.getElementById("t_status").textContent = e.data; document.getElementById("d_status").textContent = e.data; document.getElementById("b_status").textContent = e.data; });
 }
 // som nettside/app (https): virker uten nett, og nettleseren bes om å ikke rydde bort lagringen
 if(!HOST && "serviceWorker" in navigator && (location.protocol==="https:" || location.hostname==="localhost")){
@@ -733,19 +751,50 @@ function addTool(){ const r=readToolsFromTable(); if(!r.error) state.tools=r.too
 function delTool(i){ const r=readToolsFromTable(); if(!r.error) state.tools=r.tools; state.tools.splice(i,1); renderTools(); $("t_status").textContent="Fjernet – trykk Lagre for å beholde"; }
 function useTool(i){ const r=readToolsFromTable(); if(!r.error) state.tools=r.tools; const t=state.tools[i]; if(!t) return; $("i_D").value=String(t.D).replace(".",","); $("i_z").value=t.z; $("i_ntool").value=t.nmax||""; showTab("kalk"); render(); }
 
+/* ===================== mine bor ===================== */
+// state.drills = [{n, t (0 tappebor · 1 spissbor · 2 hengselbor), D, z, nmax, n0 (turtall o/min), vf (mating m/min), note}]
+function fillDrillSelect(){
+  const sel=$("b_drill"); sel.innerHTML='<option value="">– velg –</option>';
+  state.drills.forEach((d,idx)=>{ const o=document.createElement("option"); o.value=idx; o.textContent=`${d.n} (${(BT[d.t]||BT[0]).n} Ø${String(d.D).replace(".",",")})`; sel.appendChild(o); });
+}
+function renderDrills(){
+  const f = v=>v?String(v).replace(".",","):"";
+  let html = `<tr><th>Navn</th><th>Type</th><th>Ø (mm)</th><th>z</th><th>n maks (o/min)</th><th>Turtall (o/min)</th><th>Mating (m/min)</th><th>Notat</th><th></th><th></th></tr>`;
+  state.drills.forEach((d,i)=>{
+    html += `<tr data-i="${i}"><td><input class="n" data-f="n" value="${esc(d.n)}"></td><td><select data-f="t" style="background:#fff;min-height:28px;padding:3px 4px;min-width:110px">${BT.map((b,t)=>`<option value="${t}"${t===d.t?" selected":""}>${b.n}</option>`).join("")}</select></td><td><input data-f="D" value="${f(d.D)}"></td><td><input data-f="z" value="${d.z}"></td><td><input data-f="nmax" value="${d.nmax||""}"></td><td><input data-f="n0" value="${d.n0||""}"></td><td><input data-f="vf" value="${f(d.vf)}"></td><td><input class="t" data-f="note" value="${esc(d.note||"")}"></td><td><button class="btn sm" onclick="useDrill(${i})">Bruk</button></td><td><button class="btn sm del" onclick="delDrill(${i})">slett</button></td></tr>`;
+  });
+  $("d_table").innerHTML = html;
+}
+function readDrillsFromTable(){
+  const out=[];
+  for(const tr of $("d_table").querySelectorAll("tr[data-i]")){ const g=f=>tr.querySelector(`[data-f="${f}"]`).value; const d={n:g("n").trim(),t:Number(g("t"))||0,D:num(g("D")),z:num(g("z")),nmax:num(g("nmax"))||0,n0:num(g("n0"))||0,vf:num(g("vf"))||0,note:g("note")}; if(!d.n) continue; if(!(d.D>0&&d.z>0)) return {error:"Ø og z må være tall > 0 for «"+d.n+"»"}; out.push(d); }
+  return {drills:out};
+}
+function saveDrills(){ const r=readDrillsFromTable(); if(r.error){ $("d_status").textContent=r.error; return; } state.drills=r.drills; const ok=persist(); syncTouch(); $("d_status").textContent= ok?"Lagret "+new Date().toLocaleTimeString("nb-NO"):"Kunne ikke lagre lokalt – eksporter JSON"; fillDrillSelect(); renderDrills(); }
+function addDrill(){ const r=readDrillsFromTable(); if(!r.error) state.drills=r.drills; state.drills.push({n:"Nytt bor",t:0,D:8,z:2,nmax:0,n0:0,vf:0,note:""}); renderDrills(); }
+function delDrill(i){ const r=readDrillsFromTable(); if(!r.error) state.drills=r.drills; state.drills.splice(i,1); renderDrills(); $("d_status").textContent="Fjernet – trykk Lagre for å beholde"; }
+function useDrill(i){
+  const r=readDrillsFromTable(); if(!r.error) state.drills=r.drills;
+  const d=state.drills[i]; if(!d) return;
+  $("b_type").value=d.t; $("b_D").value=String(d.D).replace(".",","); $("b_z").value=d.z; $("b_ntool").value=d.nmax||"";
+  $("b_n").value=d.n0||"";
+  $("b_fn").value=(d.n0>0&&d.vf>0)? String(Math.round(d.vf*1000/d.n0*10000)/10000).replace(".",",") : "";
+  showTab("bor"); renderBor();
+}
+
 /* ===================== eksport / import ===================== */
 function exportJSON(){
-  const blob = new Blob([JSON.stringify({materials:state.materials,tools:state.tools,bor:state.bor,inp:state.inp},null,1)],{type:"application/json"});
+  const blob = new Blob([JSON.stringify({materials:state.materials,tools:state.tools,drills:state.drills,bor:state.bor,inp:state.inp},null,1)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="DKHH_mating_innstillinger.json"; document.body.appendChild(a); a.click(); a.remove();
 }
 function importJSON(file){
   if(!file) return; const r=new FileReader();
-  r.onload=()=>{ try{ const o=JSON.parse(r.result); if(Array.isArray(o.materials)&&o.materials.length) state.materials=o.materials; if(Array.isArray(o.tools)) state.tools=o.tools; if(Array.isArray(o.bor)&&o.bor.length) state.bor=o.bor; if(o.inp) state.inp=o.inp; persist(); syncTouch(); fillMaterialSelect(); fillToolSelect(); restoreInputs(); render(); renderBor(); renderMaterials(); renderTools(); renderBorTable(); $("m_status").textContent="Importert fra "+file.name; }catch(e){ $("m_status").textContent="Kunne ikke lese fila: "+e.message; } };
+  r.onload=()=>{ try{ const o=JSON.parse(r.result); if(Array.isArray(o.materials)&&o.materials.length) state.materials=o.materials; if(Array.isArray(o.tools)) state.tools=o.tools; if(Array.isArray(o.drills)) state.drills=o.drills; if(Array.isArray(o.bor)&&o.bor.length) state.bor=o.bor; if(o.inp) state.inp=o.inp; persist(); syncTouch(); fillMaterialSelect(); fillToolSelect(); fillDrillSelect(); restoreInputs(); render(); renderBor(); renderMaterials(); renderTools(); renderDrills(); renderBorTable(); $("m_status").textContent="Importert fra "+file.name; }catch(e){ $("m_status").textContent="Kunne ikke lese fila: "+e.message; } };
   r.readAsText(file);
 }
 
 /* ===================== synkronisering (GitHub-gist) ===================== */
-// state.sync = {token, gist, ts} · ts = når materialer/freser/boreverdier sist ble endret. Nyeste ts av enheten og gisten vinner.
+// state.sync = {token, gist, ts} · ts = når materialer/freser/bor/boreverdier sist ble endret. Nyeste ts av enheten og gisten vinner.
 const SYNC_FILE = "dkhh_mating_synk.json";
 let syncBusy = false, syncAgain = false;
 const kl = () => new Date().toLocaleTimeString("nb-NO");
@@ -756,7 +805,7 @@ function syncUI(txt){
   $("s_head").textContent = syncOn() ? "Synkronisering på" + (txt ? " · " + txt : "") : "";
   if(txt!==undefined) $("s_status").textContent = txt;
 }
-function refreshAll(){ fillMaterialSelect(); fillToolSelect(); render(); renderBor(); renderMaterials(); renderTools(); renderBorTable(); }
+function refreshAll(){ fillMaterialSelect(); fillToolSelect(); fillDrillSelect(); render(); renderBor(); renderMaterials(); renderTools(); renderDrills(); renderBorTable(); }
 async function gh(method, path, body){
   const r = await fetch("https://api.github.com"+path, {method, cache:"no-store", headers:{"Authorization":"Bearer "+state.sync.token, "Accept":"application/vnd.github+json", "Content-Type":"application/json"}, body: body ? JSON.stringify(body) : undefined});
   if(r.status===401) throw new Error("GitHub godtar ikke nøkkelen (feil eller utløpt)");
@@ -774,7 +823,7 @@ async function syncRemote(){
   return f ? JSON.parse(f.content) : null;
 }
 async function syncPush(){
-  const files = {}; files[SYNC_FILE] = {content: JSON.stringify({ts:state.sync.ts, materials:state.materials, tools:state.tools, bor:state.bor}, null, 1)};
+  const files = {}; files[SYNC_FILE] = {content: JSON.stringify({ts:state.sync.ts, materials:state.materials, tools:state.tools, drills:state.drills, bor:state.bor}, null, 1)};
   if(state.sync.gist) await gh("PATCH","/gists/"+state.sync.gist,{files});
   else state.sync.gist = (await gh("POST","/gists",{description:"DKHH Mating – synkroniserte innstillinger", public:false, files})).id;
   persist();
@@ -782,6 +831,7 @@ async function syncPush(){
 function syncTake(o){
   if(Array.isArray(o.materials)&&o.materials.length) state.materials=o.materials;
   if(Array.isArray(o.tools)) state.tools=o.tools;
+  if(Array.isArray(o.drills)) state.drills=o.drills;   // mangler når gisten er lastet opp av en eldre utgave – da beholdes enhetens bor
   if(Array.isArray(o.bor)&&o.bor.length) state.bor=o.bor;
   state.sync.ts = o.ts; persist(); refreshAll();
 }
@@ -890,7 +940,7 @@ function showTab(id){
   document.querySelectorAll("section.tab").forEach(s=>s.classList.toggle("active", s.id==="tab-"+id));
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active", b.dataset.tab===id));
   if(id==="hurtig") renderHurtig();
-  if(id==="freser") syncNow();   // hent freser som er endret på en annen enhet
+  if(id==="freser" || id==="minebor") syncNow();   // hent freser og bor som er endret på en annen enhet
 }
 $("nav").addEventListener("click", e=>{ const b=e.target.closest("button"); if(b) showTab(b.dataset.tab); });
 // tabelloverskriftene låses rett under fanelinja, som kan gå over flere linjer i smalt vindu
@@ -899,13 +949,14 @@ window.addEventListener("resize", setNavH); setNavH();
 
 /* ===================== start ===================== */
 loadAll();
-fillMaterialSelect(); fillToolSelect(); restoreInputs();
+fillMaterialSelect(); fillToolSelect(); fillDrillSelect(); restoreInputs();
 INP.forEach(id=>{ $(id).addEventListener("input", render); $(id).addEventListener("change", render); });
 $("i_tool").addEventListener("change", e=>{ if(e.target.value!=="") useTool(Number(e.target.value)); });
 BINP.forEach(id=>{ $(id).addEventListener("input", renderBor); $(id).addEventListener("change", renderBor); });
 // bytte av bortype: foreslå en Ø som passer typen
 $("b_type").addEventListener("change", e=>{ const D=num($("b_D").value); if(e.target.value==="2"){ if(!(D>=15)){ $("b_D").value="35"; $("b_dyp").value="13"; } } else if(D>20) $("b_D").value="8"; renderBor(); });
-render(); renderBor(); renderMaterials(); renderTools(); renderBorTable(); renderOppslag();
+$("b_drill").addEventListener("change", e=>{ if(e.target.value!=="") useDrill(Number(e.target.value)); });
+render(); renderBor(); renderMaterials(); renderTools(); renderDrills(); renderBorTable(); renderOppslag();
 // synkronisering: ved start, når appen hentes fram igjen, og når nettet kommer tilbake
 syncUI(); syncNow();
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) syncNow(); });
