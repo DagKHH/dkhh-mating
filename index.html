@@ -67,6 +67,7 @@ ol.bruk{padding-left:22px}ol.bruk li{margin:8px 0}
 <header>
   <h1>DKHH – Mating og turtall for fres og bor</h1>
   <p>vf = fz · z · n · retningsverdier for VHW-spiralfres · alt lagres lokalt i nettleseren på denne enheten</p>
+  <p id="s_head"></p>
 </header>
 <nav id="nav">
   <button data-tab="kalk" class="active">Kalkulator</button>
@@ -238,6 +239,27 @@ ol.bruk{padding-left:22px}ol.bruk li{margin:8px 0}
     <li><b>Boring:</b> velg materiale, bortype (tappebor, spissbor eller hengselbor), Ø og boraggregatets maks turtall. Ved boring regnes matingen pr. omdreining: <b>vf = fn · n</b>. Hardt tre og plast får lavere turtall (brenning/smelting), ikke lavere fn. Har borhodet fast turtall, legg det inn som «ønsket turtall» – da regnes matingen ut fra det. Spissbor: halv mating de siste millimeterne før gjennombrudd. Dype hull (over 3 × Ø): løft boret ut underveis for spontømming.</li>
   </ol>
   <p class="muted">DKHH – Dag Kjetil H. Hansen · 01.10.2026 · Fila er selvstendig: ingen internett, ingen installasjon. Kopier den dit du vil.</p>
+</div>
+<div class="card">
+  <h2>Synkronisering mellom PC og telefon</h2>
+  <div id="s_av">
+    <p>Materialer, freser og boreverdier kan holdes like på flere enheter. De lagres da i en hemmelig «gist» på GitHub-kontoen din. Inndataene i kalkulatoren følger ikke med – de huskes pr. enhet.</p>
+    <ol class="bruk">
+      <li>Logg inn på GitHub og åpne <a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=DKHH%20Mating%20synk" target="_blank" rel="noopener">github.com/settings/tokens/new</a>. Sett «Expiration» til «No expiration», la bare <b>gist</b> være krysset av, og trykk «Generate token».</li>
+      <li>Kopier nøkkelen (starter med ghp_), lim den inn under og trykk «Koble til».</li>
+      <li>Gjør det samme på den andre enheten. Koble til enheten med de riktige verdiene først – den laster dem opp. Neste enhet får spørsmål om den skal hente dem.</li>
+    </ol>
+    <div class="toolbar">
+      <input id="s_token" type="password" placeholder="ghp_…" autocomplete="off" style="max-width:320px;background:#fff">
+      <button class="btn" onclick="syncConnect()">Koble til</button>
+    </div>
+  </div>
+  <div id="s_pa" class="toolbar" style="display:none">
+    <button class="btn" onclick="syncNow()">Synkroniser nå</button>
+    <button class="btn sec" onclick="syncDisconnect()">Koble fra</button>
+  </div>
+  <div class="status" id="s_status"></div>
+  <div class="note">Synkroniseringen går når appen åpnes, når den hentes fram igjen, og hver gang du trykker Lagre. Uten nett brukes det som ligger på enheten, og opplastingen tas igjen senere. Er det endret på to enheter samtidig, vinner den som lagret sist.</div>
 </div>
 <div class="card">
   <h2>Forkortelser og begreper</h2>
@@ -567,11 +589,11 @@ function saveBor(){
     if(!r.g || !(r.kn>0) || r.fn.some(([a,b])=>!(a>=0 && b>=a))){ $("b_status").textContent = "Ugyldig tall i «"+r.g+"» – fn må være ≥ 0 med maks ≥ min, faktor > 0"; return; }
     out.push(r);
   }
-  state.bor = out; const ok = persist();
+  state.bor = out; const ok = persist(); syncTouch();
   $("b_status").textContent = ok ? "Lagret "+new Date().toLocaleTimeString("nb-NO") : "Kunne ikke lagre lokalt – eksporter JSON under Anbefalte verdier";
   renderBorTable(); renderBor();
 }
-function resetBor(){ state.bor = JSON.parse(JSON.stringify(DEF_BOR)); persist(); renderBorTable(); renderBor(); $("b_status").textContent="Standardverdier lagt tilbake"; }
+function resetBor(){ state.bor = JSON.parse(JSON.stringify(DEF_BOR)); persist(); syncTouch(); renderBorTable(); renderBor(); $("b_status").textContent="Standardverdier lagt tilbake"; }
 
 /* ===================== hurtigtabell ===================== */
 function renderHurtig(){
@@ -634,7 +656,7 @@ function readMaterialsFromTable(){
 function saveMaterials(){
   const r = readMaterialsFromTable();
   if(r.error){ $("m_status").textContent = r.error; return; }
-  state.materials = r.materials; const ok = persist();
+  state.materials = r.materials; const ok = persist(); syncTouch();
   $("m_status").textContent = ok ? "Lagret "+new Date().toLocaleTimeString("nb-NO") : "Kunne ikke lagre (nettleseren tillater ikke lokal lagring) – eksporter JSON i stedet";
   fillMaterialSelect(); render(); renderBor(); renderMaterials();
 }
@@ -649,7 +671,7 @@ function delMaterial(i){
   state.materials.splice(i,1); renderMaterials(); $("m_status").textContent="Rad fjernet – trykk Lagre for å beholde endringen";
 }
 function resetMaterials(){
-  state.materials = JSON.parse(JSON.stringify(DEF_MAT)); persist();
+  state.materials = JSON.parse(JSON.stringify(DEF_MAT)); persist(); syncTouch();
   fillMaterialSelect(); render(); renderBor(); renderMaterials(); $("m_status").textContent="Standardverdier lagt tilbake";
 }
 
@@ -666,7 +688,7 @@ function readToolsFromTable(){
   for(const tr of rows){ const g=f=>tr.querySelector(`[data-f="${f}"]`).value; const t={n:g("n").trim(),D:num(g("D")),z:num(g("z")),nmax:num(g("nmax"))||0,note:g("note")}; if(!t.n) continue; if(!(t.D>0&&t.z>0)) return {error:"Ø og z må være tall > 0 for «"+t.n+"»"}; out.push(t); }
   return {tools:out};
 }
-function saveTools(){ const r=readToolsFromTable(); if(r.error){ $("t_status").textContent=r.error; return; } state.tools=r.tools; const ok=persist(); $("t_status").textContent= ok?"Lagret "+new Date().toLocaleTimeString("nb-NO"):"Kunne ikke lagre lokalt – eksporter JSON"; fillToolSelect(); renderTools(); }
+function saveTools(){ const r=readToolsFromTable(); if(r.error){ $("t_status").textContent=r.error; return; } state.tools=r.tools; const ok=persist(); syncTouch(); $("t_status").textContent= ok?"Lagret "+new Date().toLocaleTimeString("nb-NO"):"Kunne ikke lagre lokalt – eksporter JSON"; fillToolSelect(); renderTools(); }
 function addTool(){ const r=readToolsFromTable(); if(!r.error) state.tools=r.tools; state.tools.push({n:"Ny fres",D:12,z:2,nmax:0,note:""}); renderTools(); }
 function delTool(i){ const r=readToolsFromTable(); if(!r.error) state.tools=r.tools; state.tools.splice(i,1); renderTools(); $("t_status").textContent="Fjernet – trykk Lagre for å beholde"; }
 function useTool(i){ const r=readToolsFromTable(); if(!r.error) state.tools=r.tools; const t=state.tools[i]; if(!t) return; $("i_D").value=String(t.D).replace(".",","); $("i_z").value=t.z; $("i_ntool").value=t.nmax||""; showTab("kalk"); render(); }
@@ -678,9 +700,83 @@ function exportJSON(){
 }
 function importJSON(file){
   if(!file) return; const r=new FileReader();
-  r.onload=()=>{ try{ const o=JSON.parse(r.result); if(Array.isArray(o.materials)&&o.materials.length) state.materials=o.materials; if(Array.isArray(o.tools)) state.tools=o.tools; if(Array.isArray(o.bor)&&o.bor.length) state.bor=o.bor; if(o.inp) state.inp=o.inp; persist(); fillMaterialSelect(); fillToolSelect(); restoreInputs(); render(); renderBor(); renderMaterials(); renderTools(); renderBorTable(); $("m_status").textContent="Importert fra "+file.name; }catch(e){ $("m_status").textContent="Kunne ikke lese fila: "+e.message; } };
+  r.onload=()=>{ try{ const o=JSON.parse(r.result); if(Array.isArray(o.materials)&&o.materials.length) state.materials=o.materials; if(Array.isArray(o.tools)) state.tools=o.tools; if(Array.isArray(o.bor)&&o.bor.length) state.bor=o.bor; if(o.inp) state.inp=o.inp; persist(); syncTouch(); fillMaterialSelect(); fillToolSelect(); restoreInputs(); render(); renderBor(); renderMaterials(); renderTools(); renderBorTable(); $("m_status").textContent="Importert fra "+file.name; }catch(e){ $("m_status").textContent="Kunne ikke lese fila: "+e.message; } };
   r.readAsText(file);
 }
+
+/* ===================== synkronisering (GitHub-gist) ===================== */
+// state.sync = {token, gist, ts} · ts = når materialer/freser/boreverdier sist ble endret. Nyeste ts av enheten og gisten vinner.
+const SYNC_FILE = "dkhh_mating_synk.json";
+let syncBusy = false, syncAgain = false;
+const kl = () => new Date().toLocaleTimeString("nb-NO");
+function syncOn(){ return !!(state.sync && state.sync.token); }
+function syncUI(txt){
+  $("s_av").style.display = syncOn() ? "none" : "";
+  $("s_pa").style.display = syncOn() ? "" : "none";
+  $("s_head").textContent = syncOn() ? "Synkronisering på" + (txt ? " · " + txt : "") : "";
+  if(txt!==undefined) $("s_status").textContent = txt;
+}
+function refreshAll(){ fillMaterialSelect(); fillToolSelect(); render(); renderBor(); renderMaterials(); renderTools(); renderBorTable(); }
+async function gh(method, path, body){
+  const r = await fetch("https://api.github.com"+path, {method, cache:"no-store", headers:{"Authorization":"Bearer "+state.sync.token, "Accept":"application/vnd.github+json", "Content-Type":"application/json"}, body: body ? JSON.stringify(body) : undefined});
+  if(r.status===401) throw new Error("GitHub godtar ikke nøkkelen (feil eller utløpt)");
+  if(r.status===403 || r.status===404) throw new Error("nøkkelen mangler tilgangen «gist», eller gisten er slettet ("+r.status+")");
+  if(!r.ok) throw new Error("GitHub svarte "+r.status);
+  return r.json();
+}
+async function syncRemote(){
+  if(!state.sync.gist){
+    const g = (await gh("GET","/gists?per_page=100")).find(x=>x.files && x.files[SYNC_FILE]);
+    if(!g) return null;
+    state.sync.gist = g.id;
+  }
+  const f = (await gh("GET","/gists/"+state.sync.gist)).files[SYNC_FILE];
+  return f ? JSON.parse(f.content) : null;
+}
+async function syncPush(){
+  const files = {}; files[SYNC_FILE] = {content: JSON.stringify({ts:state.sync.ts, materials:state.materials, tools:state.tools, bor:state.bor}, null, 1)};
+  if(state.sync.gist) await gh("PATCH","/gists/"+state.sync.gist,{files});
+  else state.sync.gist = (await gh("POST","/gists",{description:"DKHH Mating – synkroniserte innstillinger", public:false, files})).id;
+  persist();
+}
+function syncTake(o){
+  if(Array.isArray(o.materials)&&o.materials.length) state.materials=o.materials;
+  if(Array.isArray(o.tools)) state.tools=o.tools;
+  if(Array.isArray(o.bor)&&o.bor.length) state.bor=o.bor;
+  state.sync.ts = o.ts; persist(); refreshAll();
+}
+async function syncNow(){
+  if(!syncOn()) return false;
+  if(syncBusy){ syncAgain = true; return false; }
+  syncBusy = true; let ok = true;
+  try{
+    const remote = await syncRemote();
+    const mine = state.sync.ts || 0;
+    if(!remote){ if(!mine) state.sync.ts = Date.now(); await syncPush(); syncUI("lastet opp "+kl()); }
+    else if(!mine){
+      // første tilkobling på denne enheten, og det ligger allerede innstillinger i gisten
+      if(confirm("Det ligger allerede synkroniserte innstillinger på GitHub.\n\nOK = hent dem hit (erstatter materialer, freser og boreverdier på denne enheten)\nAvbryt = last opp denne enhetens innstillinger i stedet")){ syncTake(remote); syncUI("hentet "+kl()); }
+      else { state.sync.ts = Date.now(); await syncPush(); syncUI("lastet opp "+kl()); }
+    }
+    else if(remote.ts > mine){ syncTake(remote); syncUI("hentet "+kl()); }
+    else if(remote.ts < mine){ await syncPush(); syncUI("lastet opp "+kl()); }
+    else syncUI("i synk "+kl());
+  }catch(e){ ok = false; syncUI("ikke synkronisert: "+(e instanceof TypeError ? "ingen kontakt med GitHub" : e.message)); }
+  syncBusy = false;
+  if(syncAgain){ syncAgain = false; return syncNow(); }
+  return ok;
+}
+// kalles etter hver lagring av materialer, freser eller boreverdier
+function syncTouch(){ if(!syncOn()) return; state.sync.ts = Date.now(); persist(); syncNow(); }
+async function syncConnect(){
+  const t = $("s_token").value.trim();
+  if(!t){ $("s_status").textContent = "Lim inn nøkkelen først"; return; }
+  state.sync = {token:t, gist:null, ts:0};
+  $("s_status").textContent = "Kobler til …";
+  if(await syncNow()){ $("s_token").value = ""; persist(); }
+  else { const msg = $("s_status").textContent; state.sync = null; persist(); syncUI(msg); }
+}
+function syncDisconnect(){ state.sync = null; persist(); syncUI("Koblet fra – innstillingene på denne enheten er beholdt"); }
 
 /* ===================== faner ===================== */
 function showTab(id){
@@ -702,6 +798,10 @@ BINP.forEach(id=>{ $(id).addEventListener("input", renderBor); $(id).addEventLis
 // bytte av bortype: foreslå en Ø som passer typen
 $("b_type").addEventListener("change", e=>{ const D=num($("b_D").value); if(e.target.value==="2"){ if(!(D>=15)){ $("b_D").value="35"; $("b_dyp").value="13"; } } else if(D>20) $("b_D").value="8"; renderBor(); });
 render(); renderBor(); renderMaterials(); renderTools(); renderBorTable();
+// synkronisering: ved start, når appen hentes fram igjen, og når nettet kommer tilbake
+syncUI(); syncNow();
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) syncNow(); });
+window.addEventListener("online", ()=>syncNow());
 </script>
 </body>
 </html>
