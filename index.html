@@ -379,7 +379,13 @@ if(HOST){
 }
 // som nettside/app (https): virker uten nett, og nettleseren bes om å ikke rydde bort lagringen
 if(!HOST && "serviceWorker" in navigator && (location.protocol==="https:" || location.hostname==="localhost")){
-  navigator.serviceWorker.register("sw.js").catch(()=>{});
+  // ny utgave: sw.js tar over (controllerchange) og siden lastes på nytt, så den vises med en gang – ikke ved første installasjon
+  const hadSW = !!navigator.serviceWorker.controller; let swReloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", ()=>{ if(hadSW && !swReloaded){ swReloaded = true; location.reload(); } });
+  navigator.serviceWorker.register("sw.js").then(reg=>{
+    // se etter ny utgave også når appen hentes fram igjen, ikke bare når den startes
+    document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) reg.update().catch(()=>{}); });
+  }).catch(()=>{});
   if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
 }
 

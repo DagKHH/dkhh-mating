@@ -1,5 +1,5 @@
-// Gjør at appen virker uten nett. 20261001-233027 byttes av bygg_web.ps1, så en ny utgave henter alt på nytt.
-const CACHE = "dkhh-mating-20261001-233027";
+// Gjør at appen virker uten nett. 20261002-004245 byttes av bygg_web.ps1, så en ny utgave henter alt på nytt.
+const CACHE = "dkhh-mating-20261002-004245";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icon-maskable-512.png"];
 
 self.addEventListener("install", e => {
