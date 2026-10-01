@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DKHH – Mating og turtall</title>
+<meta name="theme-color" content="#1f3864">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--ink:#1b1f24;--muted:#5b6470;--line:#d9dee5;--navy:#1f3864;--blue:#2e5496;--yellow:#fff2cc;--green:#e2efda;--ok:#c6efce;--bad:#ffc7ce;--warn:#ffeb9c;--grp:#d9e1f2}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.35}
+header{background:var(--navy);color:#fff;padding:12px 16px}
+header h1{margin:0;font-size:18px}
+header p{margin:2px 0 0;font-size:12px;opacity:.85}
+nav{display:flex;flex-wrap:wrap;gap:4px;background:var(--blue);padding:6px 10px;position:sticky;top:0;z-index:5}
+nav button{background:transparent;border:1px solid rgba(255,255,255,.45);color:#fff;padding:8px 12px;border-radius:6px;font-size:14px;cursor:pointer}
+nav button.active{background:#fff;color:var(--navy);font-weight:bold}
+main{padding:12px 16px 40px;max-width:1240px;margin:0 auto}
+section.tab{display:none}section.tab.active{display:block}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px}
+.card h2{margin:0 0 10px;font-size:15px;color:var(--navy);border-bottom:2px solid var(--blue);padding-bottom:4px}
+label.row{display:grid;grid-template-columns:1fr 130px;align-items:center;gap:8px;margin:7px 0}
+label.row span{font-size:14px}
+label.row small{display:block;color:var(--muted);font-size:11px;line-height:1.25}
+input,select{font:inherit;padding:7px 8px;border:1px solid #b9c2cc;border-radius:6px;background:var(--yellow);width:100%;min-height:36px}
+input[type=file]{background:#fff;padding:4px}
+.big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.big div{background:var(--green);border-radius:8px;padding:10px 6px;text-align:center}
+.big b{display:block;font-size:34px;line-height:1.1}
+.big span{font-size:12px;color:var(--muted)}
+.big i{display:block;font-style:normal;font-size:13px;margin-top:2px}
+table.res{width:100%;border-collapse:collapse}
+table.res td{padding:5px 6px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top}
+table.res td:last-child{text-align:right;font-weight:bold;white-space:nowrap}
+table.res td small{color:var(--muted);font-weight:normal;display:block;font-size:11px}
+.verdict{padding:7px 9px;border-radius:6px;margin:6px 0;font-size:14px}
+.ok{background:var(--ok)}.bad{background:var(--bad)}.warn{background:var(--warn)}
+.wrap{overflow:visible}
+table.data{border-collapse:collapse;width:100%;font-size:13px;background:#fff}
+table.data th,table.data td{border:1px solid var(--line);padding:4px 6px;text-align:center;vertical-align:middle}
+table.data th{background:#404040;color:#fff;font-weight:bold;position:sticky;top:var(--navh,46px);z-index:2}
+table.data td.l{text-align:left}
+table.data tr.grp td{background:var(--grp);font-weight:bold;text-align:left;color:var(--navy)}
+table.data td input{width:64px;padding:3px 4px;text-align:center;background:#fff;min-height:28px}
+table.data td input.t{width:100%;min-width:140px;text-align:left}
+table.data td input.n{min-width:160px;text-align:left}
+table.data td b{font-size:14px}
+/* smalt vindu / telefon: brede tabeller ruller i egen ramme, overskriftene låses øverst i ramma */
+@media(max-width:820px){.wrap{overflow:auto;max-height:78vh;border:1px solid var(--line)}table.data th{top:0}}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center}
+.btn{background:var(--blue);color:#fff;border:0;padding:8px 12px;border-radius:6px;font-size:14px;cursor:pointer}
+.btn.sec{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+.btn.sm{padding:4px 8px;font-size:12px}
+.btn.del{background:#fff;color:#a33;border:1px solid #a33}
+.note{background:#fff9e6;border:1px solid #f0e0a0;border-radius:6px;padding:8px 10px;font-size:13px;margin-top:8px}
+.status{font-size:13px;color:var(--navy)}
+ol.bruk{padding-left:22px}ol.bruk li{margin:8px 0}
+.muted{color:var(--muted);font-size:12px}
+@media print{header,nav,.toolbar,.noprint{display:none!important}body{background:#fff;font-size:11px}main{padding:0;max-width:none}section.tab{display:none}section.tab.active{display:block}.card{border:0;padding:0;margin:0}table.data{font-size:10px}table.data th{position:static;background:#ddd;color:#000}}
+</style>
+</head>
+<body>
+<header>
+  <h1>DKHH – Mating og turtall for fres og bor</h1>
+  <p>vf = fz · z · n · retningsverdier for VHW-spiralfres · alt lagres lokalt i nettleseren på denne enheten</p>
+</header>
+<nav id="nav">
+  <button data-tab="kalk" class="active">Kalkulator</button>
+  <button data-tab="bor">Boring</button>
+  <button data-tab="hurtig">Hurtigtabell</button>
+  <button data-tab="verdier">Anbefalte verdier</button>
+  <button data-tab="freser">Mine freser</button>
+  <button data-tab="bruk">Bruk</button>
+</nav>
+<main>
+
+<!-- ================= KALKULATOR ================= -->
+<section class="tab active" id="tab-kalk">
+<div class="grid">
+  <div>
+    <div class="card">
+      <h2>1 Inndata</h2>
+      <label class="row"><span>Materiale</span><select id="i_mat"></select></label>
+      <label class="row"><span>Fres fra «Mine freser»<small>fyller Ø, z og n maks</small></span><select id="i_tool"><option value="">– velg –</option></select></label>
+      <label class="row"><span>Fres Ø (mm)</span><input id="i_D" inputmode="decimal" value="12"></label>
+      <label class="row"><span>Antall skjær z</span><input id="i_z" inputmode="numeric" value="2"></label>
+      <label class="row"><span>Spindel maks turtall (o/min)<small>typeskilt, eller MD35100 SPIND_VELO_LIMIT (maks spindelturtall)</small></span><input id="i_spindle" inputmode="numeric" value="18000"></label>
+      <label class="row"><span>Verktøyets maks turtall (o/min)<small>tom = typisk verdi for Ø fra tabellen</small></span><input id="i_ntool" inputmode="numeric" value=""></label>
+      <label class="row"><span>Skjæredybde ap (mm)</span><input id="i_ap" inputmode="decimal" value="8"></label>
+      <label class="row"><span>Radiell inngrep ae (mm)<small>fullt spor = Ø</small></span><input id="i_ae" inputmode="decimal" value="12"></label>
+      <label class="row"><span>Ønsket fz (mm/skjær)<small>tom = anbefalt start (finkutt)</small></span><input id="i_fz" inputmode="decimal" value=""></label>
+      <label class="row"><span>Sluttkutt – radiell ae (mm)<small>det som står igjen til siste pass</small></span><input id="i_aes" inputmode="decimal" value="0,3"></label>
+    </div>
+    <div class="card">
+      <h2>2 Anbefaling fra tabellen</h2>
+      <table class="res" id="rec"></table>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>3 Resultat – legg inn som S og F</h2>
+      <div class="big">
+        <div><span>Turtall S</span><b id="o_n">–</b><i id="o_nlim" class="muted"></i></div>
+        <div><span>Mating F</span><b id="o_vf">–</b><i id="o_vfm"></i></div>
+      </div>
+      <div id="v_fz" class="verdict"></div>
+      <div id="v_ap" class="verdict"></div>
+      <table class="res" id="res"></table>
+    </div>
+    <div class="card">
+      <h2>4 Sluttkutt – tynn radiell spon</h2>
+      <div id="v_slutt" class="verdict"></div>
+      <table class="res" id="slutt"></table>
+      <div class="note">Sluttkuttet går med samme turtall og samme eller <b>høyere</b> mating enn grovkuttet – aldri lavere. I medfres langs fiber (mot klokka + høyre korreksjon på en øy med venstreroterende fres).</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ================= BORING ================= -->
+<section class="tab" id="tab-bor">
+<div class="grid">
+  <div>
+    <div class="card">
+      <h2>1 Inndata – boring</h2>
+      <label class="row"><span>Materiale</span><select id="b_mat"></select></label>
+      <label class="row"><span>Bortype</span><select id="b_type">
+        <option value="0">Tappebor (dybelbor)</option>
+        <option value="1">Spissbor (gjennomgangsbor)</option>
+        <option value="2">Hengselbor (koppbor)</option>
+      </select></label>
+      <label class="row"><span>Bor Ø (mm)</span><input id="b_D" inputmode="decimal" value="8"></label>
+      <label class="row"><span>Antall skjær z<small>bare til fz-visningen – vanligvis 2</small></span><input id="b_z" inputmode="numeric" value="2"></label>
+      <label class="row"><span>Boraggregat maks turtall (o/min)<small>typeskilt for borhodet; bor i hovedspindelen: spindelens maks</small></span><input id="b_agg" inputmode="numeric" value="6000"></label>
+      <label class="row"><span>Borets maks turtall (o/min)<small>tom = ingen egen grense</small></span><input id="b_ntool" inputmode="numeric" value=""></label>
+      <label class="row"><span>Ønsket turtall (o/min)<small>tom = anbefalt · fyll inn ved fast turtall på borhodet</small></span><input id="b_n" inputmode="numeric" value=""></label>
+      <label class="row"><span>Ønsket fn (mm/omdr.)<small>tom = anbefalt start</small></span><input id="b_fn" inputmode="decimal" value=""></label>
+      <label class="row"><span>Boredybde (mm)</span><input id="b_dyp" inputmode="decimal" value="12"></label>
+    </div>
+    <div class="card">
+      <h2>2 Anbefaling fra tabellen</h2>
+      <table class="res" id="b_rec"></table>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>3 Resultat – legg inn som S og F</h2>
+      <div class="big">
+        <div><span>Turtall S</span><b id="bo_n">–</b><i id="bo_nlim" class="muted"></i></div>
+        <div><span>Mating F</span><b id="bo_vf">–</b><i id="bo_vfm"></i></div>
+      </div>
+      <div id="bv_fn" class="verdict"></div>
+      <div id="bv_n" class="verdict"></div>
+      <div id="bv_dyp" class="verdict"></div>
+      <table class="res" id="b_res"></table>
+      <div class="note" id="b_tip"></div>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <h2>Hurtigtabell boring – turtall (o/min) og mating (m/min) ved start-fn</h2>
+  <div class="wrap"><table class="data" id="b_hurtig"></table></div>
+</div>
+<div class="card">
+  <h2>Boreverdier – fn i mm pr. omdreining, pr. materialgruppe</h2>
+  <div class="toolbar noprint">
+    <button class="btn" onclick="saveBor()">Lagre boreverdier</button>
+    <button class="btn sec" onclick="resetBor()">Tilbakestill til standard</button>
+    <span class="status" id="b_status"></span>
+  </div>
+  <div class="wrap"><table class="data" id="b_table"></table></div>
+  <div class="note">Retningsverdier for hardmetallbor (HW) i CNC-boraggregat. vf = fn · n. Startverdi = (2·min + maks)/3. Gruppenavnet må være likt «Gruppe» under Anbefalte verdier; materialer i andre grupper bruker siste rad. fn 0 – 0 = bortypen er ikke egnet for gruppa. Turtallsfaktoren ganges med typisk turtall for boret (tappebor og spissbor: 6 000 · hengselbor Ø ≤ 20: 6 000 · Ø 21–26: 5 000 · Ø 27–35: 4 000 · Ø &gt; 35: 3 000). <b>Verktøyprodusentens egne tall går alltid foran.</b></div>
+</div>
+</section>
+
+<!-- ================= HURTIGTABELL ================= -->
+<section class="tab" id="tab-hurtig">
+<div class="card">
+  <h2>Hurtigtabell – mating i m/min ved start-fz (finkutt)</h2>
+  <div class="toolbar">
+    <span>Spindel maks: <b id="h_spindle"></b> o/min (endres i Kalkulator)</span>
+    <button class="btn sec" onclick="window.print()">Skriv ut</button>
+  </div>
+  <div class="wrap"><table class="data" id="h_table"></table></div>
+  <div class="note" id="h_note"></div>
+  <div class="note"><b>Forkortelser:</b> fz = mating pr. skjær (mm) · vf = matehastighet (m/min) · z = antall skjær · Ø = fresdiameter (mm) · ap = skjæredybde (mm). Full liste under «Bruk».</div>
+</div>
+</section>
+
+<!-- ================= ANBEFALTE VERDIER ================= -->
+<section class="tab" id="tab-verdier">
+<div class="card">
+  <h2>Anbefalte verdier – fz i mm pr. skjær, tre Ø-klasser</h2>
+  <div class="toolbar noprint">
+    <button class="btn" onclick="saveMaterials()">Lagre mine verdier</button>
+    <button class="btn sec" onclick="addMaterial()">+ Nytt materiale</button>
+    <button class="btn sec" onclick="resetMaterials()">Tilbakestill til standard</button>
+    <button class="btn sec" onclick="exportJSON()">Eksporter alt (JSON)</button>
+    <label class="btn sec" style="display:inline-block">Importer JSON <input type="file" accept=".json" style="display:none" onchange="importJSON(this.files[0])"></label>
+    <span class="status" id="m_status"></span>
+  </div>
+  <div class="wrap"><table class="data" id="m_table"></table></div>
+  <div class="note">Kilder: fz-områdene bygger på sponlast-kartene til Onsrud/Vortex for VHW-spiralfreser (2 skjær) og Leitz/Leuco sine retningslinjer, omregnet til mm og avrundet. Startverdi = (2·min + maks)/3 = finkutt. Maks ap gjelder fullt spor. kc = spesifikk skjærkraft (grovt, til effektanslag). vc maks: 9999 = ingen praktisk grense. <b>Verktøyprodusentens egne tall går alltid foran.</b> Typisk n maks for VHW-fres: Ø ≤ 6: 30 000 · Ø 7–8: 27 000 · Ø 9–12: 24 000 · Ø 13–14: 22 000 · Ø 15–16: 20 000 · Ø 17–20: 18 000 · Ø 21–25: 16 000 · Ø ≥ 26: 12 000.</div>
+</div>
+</section>
+
+<!-- ================= MINE FRESER ================= -->
+<section class="tab" id="tab-freser">
+<div class="card">
+  <h2>Mine freser – verktøyregister</h2>
+  <div class="toolbar noprint">
+    <button class="btn" onclick="addTool()">+ Ny fres</button>
+    <button class="btn sec" onclick="saveTools()">Lagre</button>
+    <span class="status" id="t_status"></span>
+  </div>
+  <div class="wrap"><table class="data" id="t_table"></table></div>
+  <div class="note">Legg inn fresene du faktisk bruker (navn, Ø, antall skjær, n maks fra tangen/esken). «Bruk» fyller kalkulatoren. n maks tom = typisk verdi for Ø.</div>
+</div>
+</section>
+
+<!-- ================= BRUK ================= -->
+<section class="tab" id="tab-bruk">
+<div class="card">
+  <h2>Bruk</h2>
+  <ol class="bruk">
+    <li><b>Kalkulator:</b> velg materiale, Ø, antall skjær, spindelens maks turtall og dybde. La «ønsket fz» stå tom første gang – da brukes startverdien (finkutt). Resultatet er S og F rett inn i programmet. Inndataene huskes til neste gang.</li>
+    <li><b>fz = vf / (z · n)</b> er det som bestemmer snittet. For lav fz (lav mating ved høyt turtall): eggen gnir og presser fibrene i stedet for å skjære – varme, brennmerker (bøk, lønn, bjørk), sløv egg og MER flising. For høy fz: grove spon river fibre foran eggen i motfres, mer kutterkraft og avbøyning. Nedre del av området for presisjon, øvre for grovkutt.</li>
+    <li><b>Turtall:</b> så høyt som spindel og verktøy tillater for Ø ≤ 16 (tre og plater). Kalkulatoren tar minste av spindel maks, verktøyets n maks og vc-grensen (plast/aluminium) og viser hvilken som begrenser. Det er matingen du styrer fz med – ikke turtallet.</li>
+    <li><b>Sluttkutt:</b> med liten radiell inngrep blir sponen mye tynnere enn fz (spontynning). Derfor samme turtall og samme eller høyere mating enn grovkuttet – aldri lavere. Kjør sluttkuttet i medfres langs fiber: eggen går inn utenfra og presser fibrene ned mot veggen i stedet for å løfte dem.</li>
+    <li><b>Massivtre langs fiber:</b> motfres gir undermål (bøk: ca. 0,1 mm pr. side). Endeved skjærer rent i begge retninger. Kalibrering fres→borspindel: X på endevedveggene, Y som halve differansen mellom de to Y-stegene – sjekk at medfres og motfres gir samme Δy, ellers sluttkutt, rotert plate eller MDF.</li>
+    <li><b>Mating flytter ikke en rett vegg sidelengs:</b> slepefeilen i styringen ligger langs kjøreretningen og runder hjørner (KV = MD32200 POSCTRL_GAIN, forsterkning i posisjonsregulatoren), men flytter ikke veggen. Det du måler midt på siden er skjæring.</li>
+    <li><b>Hurtigtabell:</b> alle materialer omregnet til m/min for din spindel – skriv ut og heng ved maskinen. <b>Anbefalte verdier:</b> grunnlaget – endre tall der hvis verktøyprodusenten sier noe annet, så følger kalkulator og hurtigtabell med. Lagre, og ta en JSON-eksport som sikkerhetskopi (lagringen ligger i nettleseren på denne enheten). Samme fil flytter innstillingene mellom PC og telefon: «Importer JSON» leser også DKHH_mating_innstillinger.json fra programmet.</li>
+    <li><b>Mine freser:</b> eget register over fresene dine; velg en i kalkulatoren så fylles Ø, z og n maks.</li>
+    <li><b>Boring:</b> velg materiale, bortype (tappebor, spissbor eller hengselbor), Ø og boraggregatets maks turtall. Ved boring regnes matingen pr. omdreining: <b>vf = fn · n</b>. Hardt tre og plast får lavere turtall (brenning/smelting), ikke lavere fn. Har borhodet fast turtall, legg det inn som «ønsket turtall» – da regnes matingen ut fra det. Spissbor: halv mating de siste millimeterne før gjennombrudd. Dype hull (over 3 × Ø): løft boret ut underveis for spontømming.</li>
+  </ol>
+  <p class="muted">DKHH – Dag Kjetil H. Hansen · 01.10.2026 · Fila er selvstendig: ingen internett, ingen installasjon. Kopier den dit du vil.</p>
+</div>
+<div class="card">
+  <h2>Forkortelser og begreper</h2>
+  <div class="wrap"><table class="data">
+    <tr><th>Forkortelse</th><th>Betyr</th><th>Enhet</th><th>Forklaring</th></tr>
+    <tr class="grp"><td colspan="4">Det du legger inn i programmet</td></tr>
+    <tr><td><b>S</b></td><td class="l">Spindelturtall</td><td>o/min</td><td class="l">S-ordet i NC-programmet. Samme som n.</td></tr>
+    <tr><td><b>F</b></td><td class="l">Mating</td><td>mm/min</td><td class="l">F-ordet i NC-programmet. Samme som vf.</td></tr>
+    <tr class="grp"><td colspan="4">Skjæredata</td></tr>
+    <tr><td><b>n</b></td><td class="l">Turtall</td><td>o/min</td><td class="l">Omdreininger pr. minutt på spindelen. «n maks» = høyeste tillatte turtall for spindel eller verktøy.</td></tr>
+    <tr><td><b>vf</b></td><td class="l">Matehastighet</td><td>mm/min (m/min)</td><td class="l">Hvor fort fresen flyttes gjennom materialet. vf = fz · z · n.</td></tr>
+    <tr><td><b>fz</b></td><td class="l">Mating pr. skjær (sponlast)</td><td>mm/skjær</td><td class="l">Hvor langt fresen flyttes for hvert skjær som går i inngrep. Det er denne som bestemmer snittet. fz = vf / (z · n).</td></tr>
+    <tr><td><b>fn</b></td><td class="l">Mating pr. omdreining (boring)</td><td>mm/omdr.</td><td class="l">Hvor langt boret går ned for hver omdreining. vf = fn · n, og fz = fn / z.</td></tr>
+    <tr><td><b>z</b></td><td class="l">Antall skjær</td><td>–</td><td class="l">Antall skjærende egger på fresen.</td></tr>
+    <tr><td><b>Ø</b></td><td class="l">Fresdiameter</td><td>mm</td><td class="l">Skjærediameteren på fresen.</td></tr>
+    <tr><td><b>ap</b></td><td class="l">Skjæredybde (aksielt)</td><td>mm</td><td class="l">Hvor dypt fresen står i materialet, målt langs fresens akse. «Maks ap (× Ø)» = største dybde pr. pass som andel av diameteren.</td></tr>
+    <tr><td><b>ae</b></td><td class="l">Radielt inngrep</td><td>mm</td><td class="l">Hvor bredt fresen tar sideveis. Fullt spor: ae = Ø. Sluttkutt: noen tidels mm.</td></tr>
+    <tr><td><b>vc</b></td><td class="l">Skjærehastighet</td><td>m/s (m/min)</td><td class="l">Farten på eggen ytterst på fresen. vc = π · Ø · n. «vc maks» = grense for plast og aluminium (smelting/påkleberi).</td></tr>
+    <tr><td><b>h</b></td><td class="l">Spontykkelse</td><td>mm</td><td class="l">Tykkeste punkt på sponen. Ved lite radielt inngrep blir h mye mindre enn fz (spontynning). Under ca. 0,04 mm gnir eggen.</td></tr>
+    <tr><td><b>Q</b></td><td class="l">Sponvolum</td><td>cm³/min</td><td class="l">Hvor mye materiale som fjernes pr. minutt. Q = ap · ae · vf.</td></tr>
+    <tr><td><b>kc</b></td><td class="l">Spesifikk skjærkraft</td><td>N/mm²</td><td class="l">Hvor tungt materialet er å skjære. Brukes bare til det grove effektanslaget.</td></tr>
+    <tr><td><b>P</b></td><td class="l">Effektbehov</td><td>kW</td><td class="l">Grovt anslag (±50 %) på hva snittet krever av spindelen. P = Q · kc / 60 000.</td></tr>
+    <tr class="grp"><td colspan="4">Fresemåter</td></tr>
+    <tr><td><b>Medfres</b></td><td class="l">Mating med fresens rotasjon</td><td>–</td><td class="l">Eggen går inn med tykk spon og ut med tynn. Renest vegg langs fiber.</td></tr>
+    <tr><td><b>Motfres</b></td><td class="l">Mating mot fresens rotasjon</td><td>–</td><td class="l">Eggen går inn med tynn spon og ut med tykk. Løfter fibrene – flis og undermål langs fiber.</td></tr>
+    <tr><td><b>Grovkutt</b></td><td class="l">Første gjennomkjøring</td><td>–</td><td class="l">Tar bort det meste av materialet og lar det stå igjen litt til sluttkuttet.</td></tr>
+    <tr><td><b>Finkutt</b></td><td class="l">Kutt med lav fz</td><td>–</td><td class="l">Nedre del av fz-området – best overflate og målnøyaktighet. Startverdien i kalkulatoren.</td></tr>
+    <tr><td><b>Sluttkutt</b></td><td class="l">Siste pass</td><td>–</td><td class="l">Tynt radielt kutt (ae noen tidels mm) som gir endelig mål og overflate.</td></tr>
+    <tr><td><b>Pass</b></td><td class="l">Én gjennomkjøring</td><td>–</td><td class="l">Dype spor deles i flere pass i dybden.</td></tr>
+    <tr class="grp"><td colspan="4">Verktøy</td></tr>
+    <tr><td><b>VHW</b></td><td class="l">Helhardmetall (Vollhartmetall)</td><td>–</td><td class="l">Fres slipt av ett stykke hardmetall. Tabellverdiene gjelder VHW-spiralfreser.</td></tr>
+    <tr><td><b>PCD</b></td><td class="l">Polykrystallinsk diamant (også DP/DIA)</td><td>–</td><td class="l">Diamantbestykket fres – for slitende materialer og store serier.</td></tr>
+    <tr><td><b>O-flute</b></td><td class="l">Enkeltskjærfres med stor, polert sponkanal</td><td>–</td><td class="l">For plast og aluminium – god sponfjerning, lite varme.</td></tr>
+    <tr><td><b>Kompresjonsfres</b></td><td class="l">Spiral opp nederst og ned øverst</td><td>–</td><td class="l">Presser begge platesidene inn mot midten – hindrer flising av belegg og finér.</td></tr>
+    <tr><td><b>Nedkutt</b></td><td class="l">Spiral som presser sponen ned</td><td>–</td><td class="l">Ren overside, men krever at plata er godt fastholdt.</td></tr>
+    <tr><td><b>Tappebor</b></td><td class="l">Dybelbor for blindhull</td><td>–</td><td class="l">Flat bunn med sentrumsspiss og forskjær. Til tapper/dybler og beslaghull som ikke går gjennom.</td></tr>
+    <tr><td><b>Spissbor</b></td><td class="l">Gjennomgangsbor</td><td>–</td><td class="l">V-formet spiss som skjærer seg rent ut på undersiden. Til gjennomgående hull.</td></tr>
+    <tr><td><b>Hengselbor</b></td><td class="l">Koppbor (Ø 15–40)</td><td>–</td><td class="l">Kort bor med stor diameter til koppehull for hengsler og beslag, vanligvis Ø 26 og Ø 35.</td></tr>
+    <tr class="grp"><td colspan="4">Materialer</td></tr>
+    <tr><td><b>MDF</b></td><td class="l">Medium Density Fibreboard</td><td>–</td><td class="l">Trefiberplate med middels tetthet.</td></tr>
+    <tr><td><b>HPL</b></td><td class="l">High Pressure Laminate</td><td>–</td><td class="l">Høytrykkslaminat / kompaktlaminat.</td></tr>
+    <tr><td><b>OSB</b></td><td class="l">Oriented Strand Board</td><td>–</td><td class="l">Plate av store, orienterte trespon.</td></tr>
+    <tr><td><b>PE, PP, HDPE, PVC</b></td><td class="l">Polyetylen, polypropylen, høytetthets-polyetylen, polyvinylklorid</td><td>–</td><td class="l">Myke plasttyper (hard PVC regnes som hard plast).</td></tr>
+    <tr><td><b>PC, POM</b></td><td class="l">Polykarbonat, polyoksymetylen (acetal)</td><td>–</td><td class="l">Harde plasttyper, sammen med akryl.</td></tr>
+    <tr class="grp"><td colspan="4">Styring</td></tr>
+    <tr><td><b>MD</b></td><td class="l">Maskindata</td><td>–</td><td class="l">Parameter i styringen. MD35100 SPIND_VELO_LIMIT = maks spindelturtall. MD32200 POSCTRL_GAIN = forsterkning i posisjonsregulatoren.</td></tr>
+    <tr><td><b>KV</b></td><td class="l">Kretsforsterkning</td><td>–</td><td class="l">Forsterkningen i posisjonsregulatoren. Bestemmer slepefeilen (hvor langt aksen henger etter programmert posisjon).</td></tr>
+  </table></div>
+</div>
+</section>
+
+</main>
+
+<script>
+/* ===================== data ===================== */
+const DEF_MAT = [
+ {n:"Bøk",g:"Løvtre – hardt",fz:[[0.10,0.20],[0.15,0.30],[0.25,0.45]],ap:1.0,kc:60,vc:9999,ret:"Medfres + sluttkutt langs fiber",tend:"Brenner lett ved for lav mating; fliser i motfres langs fiber (undermål)",merk:"Endeved skjærer rent – kalibrer fres/bor på hull og endeved, ikke på langsveggene"},
+ {n:"Eik",g:"Løvtre – hardt",fz:[[0.10,0.20],[0.15,0.30],[0.25,0.45]],ap:1.0,kc:60,vc:9999,ret:"Medfres + sluttkutt langs fiber",tend:"Grov struktur, fliser langs fiber; stor forskjell vår-/sommerved gir ujevn vegg",merk:"Sløver eggen – skarp fres er avgjørende"},
+ {n:"Ask",g:"Løvtre – hardt",fz:[[0.10,0.20],[0.15,0.30],[0.25,0.45]],ap:1.0,kc:60,vc:9999,ret:"Medfres + sluttkutt langs fiber",tend:"Seig med lange fibre – lo og flis i motfres",merk:""},
+ {n:"Lønn",g:"Løvtre – hardt",fz:[[0.10,0.20],[0.15,0.30],[0.25,0.45]],ap:1.0,kc:60,vc:9999,ret:"Medfres + sluttkutt langs fiber",tend:"Brenner svært lett (lys ved viser alt) – hold matingen oppe",merk:""},
+ {n:"Hardved tropisk (merbau, jatoba, ipé, wengé)",g:"Løvtre – hardt",fz:[[0.08,0.15],[0.12,0.22],[0.20,0.35]],ap:0.75,kc:70,vc:9999,ret:"Medfres + sluttkutt",tend:"Slitende (kisel) – sløver VHW fort; vekslende fiber fliser begge veier",merk:"PCD-fres ved serier; sluttkutt obligatorisk"},
+ {n:"Bjørk",g:"Løvtre – middels",fz:[[0.12,0.22],[0.18,0.32],[0.28,0.45]],ap:1.0,kc:50,vc:9999,ret:"Medfres + sluttkutt langs fiber",tend:"Fin struktur, rent snitt; brenner lett",merk:""},
+ {n:"Kirsebær",g:"Løvtre – middels",fz:[[0.12,0.22],[0.18,0.32],[0.28,0.45]],ap:1.0,kc:50,vc:9999,ret:"Medfres + sluttkutt langs fiber",tend:"Brenner lett",merk:""},
+ {n:"Valnøtt",g:"Løvtre – middels",fz:[[0.12,0.22],[0.18,0.32],[0.28,0.45]],ap:1.0,kc:50,vc:9999,ret:"Medfres",tend:"Snill å frese, lite flis",merk:""},
+ {n:"Mahogni / sapeli",g:"Løvtre – middels",fz:[[0.12,0.22],[0.18,0.32],[0.28,0.45]],ap:1.0,kc:50,vc:9999,ret:"Medfres + sluttkutt (prøv begge)",tend:"Vekslende fiber – fliser i begge retninger",merk:"Sluttkutt obligatorisk for rent mål"},
+ {n:"Teak",g:"Løvtre – middels",fz:[[0.12,0.22],[0.18,0.32],[0.28,0.45]],ap:1.0,kc:50,vc:9999,ret:"Medfres",tend:"Kisel og olje – slitende, men smører litt",merk:""},
+ {n:"Furu",g:"Bartre / mykt løvtre",fz:[[0.12,0.22],[0.20,0.35],[0.30,0.50]],ap:1.5,kc:35,vc:9999,ret:"Medfres + sluttkutt langs fiber",tend:"Kvae legger seg på eggen; fibrene bøyer unna ved lav mating (lo, undermål)",merk:"Hold fz i øvre del – lav mating gir lodden vegg"},
+ {n:"Gran",g:"Bartre / mykt løvtre",fz:[[0.12,0.22],[0.20,0.35],[0.30,0.50]],ap:1.5,kc:35,vc:9999,ret:"Medfres + sluttkutt langs fiber",tend:"Kvist hard, resten myk – ujevn vegg",merk:""},
+ {n:"Lerk",g:"Bartre / mykt løvtre",fz:[[0.12,0.22],[0.20,0.35],[0.30,0.50]],ap:1.5,kc:35,vc:9999,ret:"Medfres + sluttkutt langs fiber",tend:"Kvaerik; harde årringer",merk:""},
+ {n:"Osp / poppel / lind",g:"Bartre / mykt løvtre",fz:[[0.12,0.22],[0.20,0.35],[0.30,0.50]],ap:1.5,kc:35,vc:9999,ret:"Medfres",tend:"Lodden ved for lav mating – hold fz i øvre del",merk:""},
+ {n:"Or (older)",g:"Bartre / mykt løvtre",fz:[[0.12,0.22],[0.20,0.35],[0.30,0.50]],ap:1.5,kc:35,vc:9999,ret:"Medfres",tend:"Snill, brenner lite",merk:""},
+ {n:"MDF",g:"Plater",fz:[[0.12,0.25],[0.25,0.40],[0.35,0.60]],ap:1.5,kc:40,vc:9999,ret:"Begge (medfres for finish)",tend:"Mye støv; sløver; kantene lodne ved for lav fz",merk:"Ingen fiberretning – god kalibreringsplate"},
+ {n:"Sponplate (rå)",g:"Plater",fz:[[0.15,0.25],[0.25,0.40],[0.35,0.60]],ap:1.5,kc:45,vc:9999,ret:"Begge",tend:"Slitende; grov kant",merk:""},
+ {n:"Spon/MDF melaminbelagt",g:"Plater",fz:[[0.10,0.18],[0.18,0.30],[0.25,0.40]],ap:1.0,kc:45,vc:9999,ret:"Medfres – kompresjonsfres",tend:"Belegget flisser, særlig underside",merk:"Kompresjonsfres (opp/ned) eller nedkutt ved fastholdt plate"},
+ {n:"Kryssfiner (bjørk / furu)",g:"Plater",fz:[[0.12,0.20],[0.20,0.32],[0.30,0.45]],ap:1.0,kc:50,vc:9999,ret:"Medfres – kompresjonsfres",tend:"Limlag sløver; splintrer på undersiden",merk:""},
+ {n:"Finerte plater",g:"Plater",fz:[[0.10,0.18],[0.15,0.28],[0.20,0.35]],ap:1.0,kc:45,vc:9999,ret:"Medfres – kompresjonsfres",tend:"Finéren flisser – skarp fres og sluttkutt",merk:""},
+ {n:"HPL / kompaktlaminat",g:"Plater",fz:[[0.05,0.10],[0.10,0.18],[0.15,0.25]],ap:0.5,kc:80,vc:9999,ret:"Medfres",tend:"Svært slitende – PCD; mye støv",merk:""},
+ {n:"OSB",g:"Plater",fz:[[0.15,0.25],[0.25,0.40],[0.35,0.55]],ap:1.5,kc:45,vc:9999,ret:"Begge",tend:"Grov, flisete kant uansett",merk:""},
+ {n:"Plast myk (PE, PP, HDPE, PVC-skum)",g:"Plast",fz:[[0.10,0.20],[0.20,0.35],[0.30,0.45]],ap:2.0,kc:25,vc:1000,ret:"Medfres",tend:"Smelter ved for lav mating",merk:"Enkeltskjær (O-flute), høy mating, god sponfjerning"},
+ {n:"Plast hard (akryl, PC, POM, hard PVC)",g:"Plast",fz:[[0.05,0.12],[0.12,0.25],[0.20,0.30]],ap:1.0,kc:40,vc:800,ret:"Medfres",tend:"Akryl sprekker/smelter; PC smelter lett",merk:"O-flute polert; turtallet begrenses av vc (smelting)"},
+ {n:"Aluminium (plate / profil)",g:"Metall",fz:[[0.05,0.10],[0.10,0.18],[0.15,0.25]],ap:0.5,kc:700,vc:400,ret:"Medfres",tend:"Pakker seg på eggen uten smøring",merk:"Enkeltskjær O-flute, sprit-/tåkesmøring, turtall etter vc-grensen"}
+];
+const NMAX = [[0,30000],[7,27000],[9,24000],[13,22000],[15,20000],[17,18000],[21,16000],[26,12000]];
+const DEF_TOOLS = [{n:"Ø12 spiral 2-skjær (eksempel)",D:12,z:2,nmax:24000,note:"VHW, endre til dine"}];
+// boring: fn (mm/omdr.) [min,maks] for tappebor, spissbor, hengselbor · kn = turtallsfaktor · siste rad brukes for ukjente grupper
+const DEF_BOR = [
+ {g:"Løvtre – hardt",fn:[[0.15,0.35],[0.12,0.30],[0.10,0.25]],kn:0.75},
+ {g:"Løvtre – middels",fn:[[0.20,0.40],[0.15,0.35],[0.12,0.30]],kn:0.85},
+ {g:"Bartre / mykt løvtre",fn:[[0.25,0.50],[0.20,0.40],[0.15,0.35]],kn:1},
+ {g:"Plater",fn:[[0.25,0.50],[0.20,0.40],[0.15,0.40]],kn:1},
+ {g:"Plast",fn:[[0.10,0.25],[0.10,0.25],[0.08,0.20]],kn:0.5},
+ {g:"Metall",fn:[[0,0],[0.03,0.08],[0,0]],kn:0.3},
+ {g:"Øvrige (egne grupper)",fn:[[0.20,0.40],[0.15,0.35],[0.12,0.30]],kn:0.85}
+];
+const BT = [
+ {n:"Tappebor",tip:"Blindhull med flat bunn. Høyre- og venstreroterende bor må stå i riktig spindel. I belagte plater: skarpe forskjær, ellers flisser belegget rundt hullet."},
+ {n:"Spissbor",tip:"Gjennomgående hull. Halver matingen de siste 2–3 mm før gjennombrudd, eller bor mot offerplate, så river ikke boret ut undersiden."},
+ {n:"Hengselbor",tip:"Koppehull er vanligvis 12,5–13,5 mm dype – sjekk gjenstående godstykkelse mot beslaget. Stor diameter brenner lett: ikke la boret stå og gå i bunnen."}
+];
+const KEY = "dkhh_mating_v1";
+
+/* ===================== lagring ===================== */
+// HOST = kjører som program (DKHH_Mating.exe): innstillingene ligger i en JSON-fil i stedet for i nettleseren
+const HOST = !!(window.chrome && window.chrome.webview);
+let state = {materials:null, tools:null, bor:null, inp:null};
+function loadAll(){
+  try{ const raw = HOST ? window.__dkhhInit : localStorage.getItem(KEY); if(raw){ const o = JSON.parse(raw); state = Object.assign(state, o); } }catch(e){}
+  if(!Array.isArray(state.materials) || !state.materials.length) state.materials = JSON.parse(JSON.stringify(DEF_MAT));
+  if(!Array.isArray(state.tools)) state.tools = JSON.parse(JSON.stringify(DEF_TOOLS));
+  if(!Array.isArray(state.bor) || !state.bor.length) state.bor = JSON.parse(JSON.stringify(DEF_BOR));
+  if(!state.inp) state.inp = {};
+}
+function persist(){ try{ const s = JSON.stringify(state); if(HOST) window.chrome.webview.postMessage(s); else localStorage.setItem(KEY, s); return true; }catch(e){ return false; } }
+if(HOST){
+  document.querySelector("header p").textContent = "vf = fz · z · n · retningsverdier for VHW-spiralfres · alt lagres i DKHH_mating_innstillinger.json ved siden av programmet";
+  window.chrome.webview.addEventListener("message", e=>{ document.getElementById("m_status").textContent = e.data; document.getElementById("t_status").textContent = e.data; document.getElementById("b_status").textContent = e.data; });
+}
+// som nettside/app (https): virker uten nett, og nettleseren bes om å ikke rydde bort lagringen
+if(!HOST && "serviceWorker" in navigator && (location.protocol==="https:" || location.hostname==="localhost")){
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+  if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+}
+
+/* ===================== hjelpere ===================== */
+const nb = new Intl.NumberFormat("nb-NO");
+const f0 = v => nb.format(Math.round(v));
+const f1 = v => v.toLocaleString("nb-NO",{minimumFractionDigits:1,maximumFractionDigits:1});
+const f2 = v => v.toLocaleString("nb-NO",{minimumFractionDigits:2,maximumFractionDigits:2});
+const f3 = v => v.toLocaleString("nb-NO",{minimumFractionDigits:3,maximumFractionDigits:3});
+function num(s){ if(s===null||s===undefined) return NaN; s=String(s).trim().replace(/\s/g,"").replace(",","."); if(s==="") return NaN; const v=Number(s); return isFinite(v)?v:NaN; }
+function nTool(D){ let n=NMAX[0][1]; for(const [lo,v] of NMAX){ if(D>=lo) n=v; } return n; }
+function klasse(D){ return D<=8?0:(D<=13?1:2); }
+const KL = ["Ø ≤ 8","Ø 10–12","Ø 16–20"];
+function fzStart(mn,mx){ return Math.round(((2*mn+mx)/3)*100)/100; }
+function floor100(x){ return Math.floor(x/100)*100; }
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+/* ===================== beregning ===================== */
+function calc(i, m){
+  const k = klasse(i.D);
+  const [fmin,fmax] = m.fz[k];
+  const fstart = fzStart(fmin,fmax);
+  const fz = (i.fz>0)? i.fz : fstart;
+  const ntool = i.ntool>0 ? i.ntool : nTool(i.D);
+  const nvc = m.vc*1000/(Math.PI*i.D);
+  const nraw = Math.min(i.spindle, ntool, nvc);
+  const lim = nraw===i.spindle ? "spindel maks" : (nraw===ntool ? "verktøyets n maks" : "vc-grense ("+m.vc+" m/min)");
+  const n = floor100(nraw);
+  const vf = fz*i.z*n;
+  const vc = Math.PI*i.D*n/60000;
+  const ae = Math.min(i.ae, i.D);
+  const Q = i.ap*ae*vf/1000;
+  const P = Q*m.kc/60000;
+  const apmax = m.ap*i.D;
+  const passes = Math.max(1, Math.ceil(i.ap/apmax - 1e-9));
+  const r = i.aes >= i.D/2 ? 1 : 2*Math.sqrt(i.aes/i.D*(1-i.aes/i.D));
+  const h = fz*r;
+  const vfmin = 0.05/r*i.z*n;
+  const vfslutt = Math.max(vf, vfmin);
+  return {k,fmin,fmax,fstart,fz,ntool,nvc,n,lim,vf,vc,Q,P,apmax,passes,r,h,vfmin,vfslutt};
+}
+
+/* ===================== kalkulator-UI ===================== */
+const $ = id => document.getElementById(id);
+const INP = ["i_mat","i_D","i_z","i_spindle","i_ntool","i_ap","i_ae","i_fz","i_aes"];
+
+function fillMaterialSelect(){ fillMatSel("i_mat"); fillMatSel("b_mat"); }
+function fillMatSel(id){
+  const sel = $(id); const cur = sel.value; sel.innerHTML = "";
+  let grp = null, og = null;
+  state.materials.forEach((m,idx)=>{
+    if(m.g!==grp){ grp=m.g; og=document.createElement("optgroup"); og.label=grp; sel.appendChild(og); }
+    const o=document.createElement("option"); o.value=idx; o.textContent=m.n; og.appendChild(o);
+  });
+  if(cur!=="" && Number(cur)<state.materials.length) sel.value=cur; else sel.value=0;
+}
+function fillToolSelect(){
+  const sel=$("i_tool"); sel.innerHTML='<option value="">– velg –</option>';
+  state.tools.forEach((t,idx)=>{ const o=document.createElement("option"); o.value=idx; o.textContent=`${t.n} (Ø${t.D}, z=${t.z})`; sel.appendChild(o); });
+}
+function readInputs(){
+  return {
+    mat: Number($("i_mat").value)||0,
+    D: num($("i_D").value), z: num($("i_z").value), spindle: num($("i_spindle").value),
+    ntool: num($("i_ntool").value), ap: num($("i_ap").value), ae: num($("i_ae").value),
+    fz: num($("i_fz").value), aes: num($("i_aes").value)
+  };
+}
+function verdictFz(c){ if(c.fz<c.fmin) return ["bad","LAV – fare for gnidning/brenning: øk matingen"]; if(c.fz>c.fmax) return ["bad","HØY – flising/avbøyning: senk matingen"]; return ["ok","OK – fz "+f2(c.fz)+" ligger innenfor "+f2(c.fmin)+"–"+f2(c.fmax)]; }
+function verdictAp(c,i){ if(i.ap<=c.apmax+1e-9) return ["ok","Skjæredybde "+f1(i.ap)+" mm OK i ett pass (maks "+f1(c.apmax)+" mm)"]; return ["bad","FOR DYPT – del i "+c.passes+" pass à "+f1(i.ap/c.passes)+" mm (maks "+f1(c.apmax)+" mm pr. pass)"]; }
+function verdictSlutt(c){ if(c.h<0.04) return ["bad","GNIDNING – øk matingen for sluttkuttet"]; if(c.h<0.05) return ["warn","MARGINALT – ikke senk matingen"]; return ["ok","OK – sponen er tykk nok til å skjære"]; }
+function setVerdict(id,[cls,txt]){ const e=$(id); e.className="verdict "+cls; e.textContent=txt; }
+
+function render(){
+  const i = readInputs();
+  const m = state.materials[i.mat] || state.materials[0];
+  const bad = [i.D,i.z,i.spindle,i.ap,i.ae,i.aes].some(v=>!(v>0));
+  $("rec").innerHTML = `
+   <tr><td>Gruppe</td><td>${esc(m.g)}</td></tr>
+   <tr><td>Ø-klasse</td><td>${bad?"–":KL[klasse(i.D)]}</td></tr>
+   <tr><td>fz anbefalt min – maks<small>under: gnidning/brenning · over: flising/avbøyning</small></td><td>${bad?"–":f2(m.fz[klasse(i.D)][0])+" – "+f2(m.fz[klasse(i.D)][1])}</td></tr>
+   <tr><td>fz start (finkutt)</td><td>${bad?"–":f2(fzStart(...m.fz[klasse(i.D)]))}</td></tr>
+   <tr><td>Verktøyets n maks, typisk for Ø</td><td>${bad?"–":f0(nTool(i.D))}</td></tr>
+   <tr><td>Maks dybde pr. pass (fullt spor)</td><td>${bad?"–":f2(m.ap)+" × Ø = "+f1(m.ap*i.D)+" mm"}</td></tr>
+   <tr><td>vc-grense</td><td>${m.vc>=9999?"ingen":f0(m.vc)+" m/min"}</td></tr>
+   <tr><td>Fresretning</td><td style="white-space:normal;text-align:left">${esc(m.ret)}</td></tr>
+   <tr><td>Tendens</td><td style="white-space:normal;text-align:left;font-weight:normal">${esc(m.tend)}</td></tr>
+   ${m.merk?`<tr><td>Merknad</td><td style="white-space:normal;text-align:left;font-weight:normal">${esc(m.merk)}</td></tr>`:""}`;
+  if(bad){
+    $("o_n").textContent="–"; $("o_vf").textContent="–"; $("o_vfm").textContent=""; $("o_nlim").textContent="";
+    setVerdict("v_fz",["warn","Fyll inn alle tallfeltene (Ø, z, spindel, ap, ae, sluttkutt)"]);
+    $("v_ap").className="verdict"; $("v_ap").textContent=""; $("res").innerHTML=""; $("slutt").innerHTML=""; $("v_slutt").className="verdict"; $("v_slutt").textContent="";
+    return;
+  }
+  const c = calc(i,m);
+  $("o_n").textContent = f0(c.n);
+  $("o_nlim").textContent = "begrenset av "+c.lim;
+  $("o_vf").textContent = f0(c.vf);
+  $("o_vfm").textContent = "mm/min  =  "+f1(c.vf/1000)+" m/min";
+  setVerdict("v_fz", verdictFz(c));
+  setVerdict("v_ap", verdictAp(c,i));
+  $("res").innerHTML = `
+   <tr><td>fz brukt (mm/skjær)</td><td>${f2(c.fz)}${i.fz>0?"":" <small>startverdi</small>"}</td></tr>
+   <tr><td>Skjærehastighet vc<small>info – små freser går alltid lavt i vc, det er fz som teller</small></td><td>${f1(c.vc)} m/s = ${f0(c.vc*60)} m/min</td></tr>
+   <tr><td>Sponvolum Q (ap · ae · vf)</td><td>${f0(c.Q)} cm³/min</td></tr>
+   <tr><td>Effektbehov, grovt (±50 %)<small>Q · kc / 60000, kc = ${m.kc} N/mm²</small></td><td>${f2(c.P)} kW</td></tr>
+   <tr><td>Turtall – grenser<small>spindel / verktøy / vc</small></td><td>${f0(i.spindle)} / ${f0(c.ntool)} / ${c.nvc>1e6?"–":f0(c.nvc)}</td></tr>`;
+  setVerdict("v_slutt", verdictSlutt(c));
+  $("slutt").innerHTML = `
+   <tr><td>Spontynningsfaktor<small>h = fz · 2·√(ae/Ø · (1 − ae/Ø)); = 1 når ae ≥ Ø/2</small></td><td>${f3(c.r)}</td></tr>
+   <tr><td>Effektiv maks spontykkelse h<small>under ca. 0,04 mm gnir eggen</small></td><td>${f3(c.h)} mm</td></tr>
+   <tr><td>Minste mating for h ≥ 0,05 mm</td><td>${f0(c.vfmin)} mm/min = ${f1(c.vfmin/1000)} m/min</td></tr>
+   <tr><td><b>Anbefalt mating sluttkutt</b><small>samme S = ${f0(c.n)} · i medfres</small></td><td>${f0(c.vfslutt)} mm/min = ${f1(c.vfslutt/1000)} m/min</td></tr>`;
+  // husk inndata
+  INP.forEach(id=>state.inp[id]=$(id).value); persist();
+  renderHurtig();
+}
+function restoreInputs(){ INP.concat(BINP).forEach(id=>{ if(state.inp[id]!==undefined && state.inp[id]!==null) $(id).value=state.inp[id]; }); }
+
+/* ===================== boring ===================== */
+const BINP = ["b_mat","b_type","b_D","b_z","b_agg","b_ntool","b_n","b_fn","b_dyp"];
+function borRow(g){ return state.bor.find(r=>r.g===g) || state.bor[state.bor.length-1]; }
+function nBor(t,D){ if(t<2) return 6000; return D<=20?6000:(D<=26?5000:(D<=35?4000:3000)); }
+function calcBor(i, row){
+  const [fmin,fmax] = row.fn[i.t];
+  const fstart = fzStart(fmin,fmax);
+  const fn = (i.fn>0)? i.fn : fstart;
+  const nrec = floor100(nBor(i.t,i.D)*row.kn);
+  const ntool = i.ntool>0 ? i.ntool : Infinity;
+  const want = i.n>0 ? i.n : nrec;
+  const nraw = Math.min(want, i.agg, ntool);
+  const lim = nraw===want ? (i.n>0 ? "ønsket turtall" : "anbefalt for materiale og bor") : (nraw===i.agg ? "boraggregat maks" : "borets n maks");
+  const n = i.n>0 && nraw===want ? nraw : floor100(nraw);
+  const vf = fn*n;
+  const vc = Math.PI*i.D*n/1000;
+  return {egnet:fmax>0,fmin,fmax,fstart,fn,nrec,n,lim,vf,vc,fz:fn/i.z,tid:i.dyp/vf*60};
+}
+function readBorInputs(){
+  return {
+    mat: Number($("b_mat").value)||0, t: Number($("b_type").value)||0,
+    D: num($("b_D").value), z: num($("b_z").value), agg: num($("b_agg").value),
+    ntool: num($("b_ntool").value), n: num($("b_n").value), fn: num($("b_fn").value), dyp: num($("b_dyp").value)
+  };
+}
+function renderBor(){
+  const i = readBorInputs();
+  const m = state.materials[i.mat] || state.materials[0];
+  const row = borRow(m.g);
+  const bt = BT[i.t];
+  const bad = [i.D,i.z,i.agg,i.dyp].some(v=>!(v>0));
+  const egnet = row.fn[i.t][1]>0;
+  const clear = ()=>{ $("bo_n").textContent="–"; $("bo_vf").textContent="–"; $("bo_vfm").textContent=""; $("bo_nlim").textContent=""; ["bv_n","bv_dyp"].forEach(id=>{ $(id).className="verdict"; $(id).textContent=""; }); $("b_res").innerHTML=""; };
+  $("b_rec").innerHTML = `
+   <tr><td>Gruppe</td><td>${esc(m.g)}${row.g===m.g?"":"<small>bruker raden «"+esc(row.g)+"»</small>"}</td></tr>
+   <tr><td>fn anbefalt min – maks<small>under: gnidning/brenning · over: utriving, boret presses</small></td><td>${egnet?f2(row.fn[i.t][0])+" – "+f2(row.fn[i.t][1]):"ikke egnet"}</td></tr>
+   <tr><td>fn start</td><td>${egnet?f2(fzStart(...row.fn[i.t])):"–"}</td></tr>
+   <tr><td>Anbefalt turtall<small>typisk ${bad?"":f0(nBor(i.t,i.D))+" "}× faktor ${f2(row.kn)}</small></td><td>${bad?"–":f0(floor100(nBor(i.t,i.D)*row.kn))}</td></tr>
+   ${m.tend?`<tr><td>Tendens (fresing)</td><td style="white-space:normal;text-align:left;font-weight:normal">${esc(m.tend)}</td></tr>`:""}`;
+  $("b_tip").innerHTML = "<b>"+bt.n+":</b> "+bt.tip;
+  if(bad){ clear(); setVerdict("bv_fn",["warn","Fyll inn alle tallfeltene (Ø, z, boraggregat maks, boredybde)"]); return; }
+  if(!egnet && !(i.fn>0)){ clear(); setVerdict("bv_fn",["bad",bt.n+" er ikke egnet i "+m.n+" – bruk metallbor (spissbor), eller legg inn egen fn"]); BINP.forEach(id=>state.inp[id]=$(id).value); persist(); renderBorHurtig(); return; }
+  const c = calcBor(i,row);
+  $("bo_n").textContent = f0(c.n);
+  $("bo_nlim").textContent = "begrenset av "+c.lim;
+  $("bo_vf").textContent = f0(c.vf);
+  $("bo_vfm").textContent = "mm/min  =  "+f2(c.vf/1000)+" m/min";
+  setVerdict("bv_fn", !c.egnet ? ["bad",bt.n+" er ikke egnet i "+m.n+" – egen fn brukt"] : (c.fn<c.fmin ? ["bad","LAV – boret gnir og brenner: øk matingen"] : (c.fn>c.fmax ? ["bad","HØY – utriving og stor skyvekraft: senk matingen"] : ["ok","OK – fn "+f2(c.fn)+" ligger innenfor "+f2(c.fmin)+"–"+f2(c.fmax)])));
+  setVerdict("bv_n", c.n>c.nrec*1.1 ? ["warn","Turtallet ligger over anbefalt ("+f0(c.nrec)+") – fare for brenning, hold matingen oppe"] : (c.n<c.nrec*0.6 ? ["warn","Turtallet ligger godt under anbefalt ("+f0(c.nrec)+") – matingen blir tilsvarende lav"] : ["ok","Turtall OK (anbefalt "+f0(c.nrec)+")"]));
+  setVerdict("bv_dyp", i.t<2 && i.dyp>3*i.D ? ["warn","Dypt hull (over 3 × Ø = "+f1(3*i.D)+" mm) – løft boret ut underveis for spontømming"] : (i.t===2 && i.dyp>15 ? ["warn","Uvanlig dypt for hengselbor – sjekk skjærelengden og gjenstående gods"] : ["ok","Boredybde "+f1(i.dyp)+" mm OK i én nedføring"]));
+  $("b_res").innerHTML = `
+   <tr><td>fn brukt (mm/omdr.)</td><td>${f2(c.fn)}${i.fn>0?"":" <small>startverdi</small>"}</td></tr>
+   <tr><td>fz (mm/skjær)<small>fn / z</small></td><td>${f2(c.fz)}</td></tr>
+   <tr><td>Skjærehastighet vc<small>ytterst på boret</small></td><td>${f0(c.vc)} m/min</td></tr>
+   ${i.t===1?`<tr><td><b>Mating ved gjennombrudd</b><small>siste 2–3 mm, halv mating</small></td><td>${f0(c.vf/2)} mm/min</td></tr>`:""}
+   <tr><td>Boretid pr. hull<small>bare nedføringen</small></td><td>${f1(c.tid)} s</td></tr>`;
+  BINP.forEach(id=>state.inp[id]=$(id).value); persist();
+  renderBorHurtig();
+}
+function renderBorHurtig(){
+  const agg = num($("b_agg").value)||6000;
+  const cols = [[0,5],[0,8],[1,5],[1,8],[2,26],[2,35]];
+  let html = `<tr><th>Materialgruppe</th>${cols.map(([t,D])=>`<th>${BT[t].n} Ø${D}<br>n</th><th>${BT[t].n} Ø${D}<br>vf</th>`).join("")}</tr>`;
+  state.bor.forEach(r=>{
+    html += `<tr><td class="l">${esc(r.g)}</td>`;
+    cols.forEach(([t,D])=>{
+      if(!(r.fn[t][1]>0)){ html += `<td>–</td><td>–</td>`; return; }
+      const n = floor100(Math.min(agg, nBor(t,D)*r.kn));
+      html += `<td>${f0(n)}</td><td><b>${f2(fzStart(...r.fn[t])*n/1000)}</b></td>`;
+    });
+    html += `</tr>`;
+  });
+  $("b_hurtig").innerHTML = html;
+}
+function renderBorTable(){
+  const f = v=>String(v).replace(".",",");
+  let html = `<tr><th>Materialgruppe</th>${BT.map(b=>`<th>${b.n}<br>fn min</th><th>${b.n}<br>fn maks</th>`).join("")}<th>Turtalls-<br>faktor</th></tr>`;
+  state.bor.forEach((r,i)=>{
+    html += `<tr data-i="${i}"><td><input class="t" data-f="g" value="${esc(r.g)}"></td>${[0,1,2].map(t=>`<td><input data-f="fn${t}0" value="${f(r.fn[t][0])}"></td><td><input data-f="fn${t}1" value="${f(r.fn[t][1])}"></td>`).join("")}<td><input data-f="kn" value="${f(r.kn)}"></td></tr>`;
+  });
+  $("b_table").innerHTML = html;
+}
+function saveBor(){
+  const out = [];
+  for(const tr of $("b_table").querySelectorAll("tr[data-i]")){
+    const g = f => tr.querySelector(`[data-f="${f}"]`).value;
+    const r = {g:g("g").trim(), fn:[0,1,2].map(t=>[num(g("fn"+t+"0")),num(g("fn"+t+"1"))]), kn:num(g("kn"))};
+    if(!r.g || !(r.kn>0) || r.fn.some(([a,b])=>!(a>=0 && b>=a))){ $("b_status").textContent = "Ugyldig tall i «"+r.g+"» – fn må være ≥ 0 med maks ≥ min, faktor > 0"; return; }
+    out.push(r);
+  }
+  state.bor = out; const ok = persist();
+  $("b_status").textContent = ok ? "Lagret "+new Date().toLocaleTimeString("nb-NO") : "Kunne ikke lagre lokalt – eksporter JSON under Anbefalte verdier";
+  renderBorTable(); renderBor();
+}
+function resetBor(){ state.bor = JSON.parse(JSON.stringify(DEF_BOR)); persist(); renderBorTable(); renderBor(); $("b_status").textContent="Standardverdier lagt tilbake"; }
+
+/* ===================== hurtigtabell ===================== */
+function renderHurtig(){
+  const spindle = num($("i_spindle").value)||18000;
+  $("h_spindle").textContent = f0(spindle);
+  const cols = [[8,2],[12,2],[16,2],[16,3],[20,3]];
+  let html = `<tr><th>Nr</th><th>Materiale</th>${cols.map(([D,z])=>`<th>fz<br>Ø${D}</th><th>vf Ø${D}<br>z=${z}</th>`).join("")}<th>Fresretning</th><th>Maks ap<br>Ø12 (mm)</th></tr>`;
+  let grp=null;
+  state.materials.forEach((m,idx)=>{
+    if(m.g!==grp){ grp=m.g; html+=`<tr class="grp"><td colspan="${4+cols.length*2}">${esc(grp)}</td></tr>`; }
+    html += `<tr><td>${idx+1}</td><td class="l">${esc(m.n)}</td>`;
+    cols.forEach(([D,z])=>{
+      const fz = fzStart(...m.fz[klasse(D)]);
+      const n = floor100(Math.min(spindle, nTool(D), m.vc*1000/(Math.PI*D)));
+      html += `<td>${f2(fz)}</td><td><b>${f1(fz*z*n/1000)}</b></td>`;
+    });
+    html += `<td class="l">${esc(m.ret)}</td><td>${f1(m.ap*12)}</td></tr>`;
+  });
+  $("h_table").innerHTML = html;
+  const nn = D => f0(floor100(Math.min(spindle,nTool(D))));
+  $("h_note").innerHTML = `<b>Turtall brukt for tre og plater (o/min):</b> Ø8: ${nn(8)} · Ø12: ${nn(12)} · Ø16: ${nn(16)} · Ø20: ${nn(20)}. Plast og aluminium begrenses i tillegg av vc-grensen; med enkeltskjær (O-flute) er vf halvparten av z=2-kolonnen. Verdiene er start-/finkuttverdier – for grovkutt kan matingen økes mot fz maks. Sluttkutt: samme turtall, aldri lavere mating, i medfres langs fiber.`;
+}
+
+/* ===================== anbefalte verdier (redigerbar) ===================== */
+function renderMaterials(){
+  let html = `<tr><th>Nr</th><th>Materiale</th><th>Gruppe</th><th>fz min<br>Ø ≤ 8</th><th>fz maks<br>Ø ≤ 8</th><th>fz min<br>Ø 10–12</th><th>fz maks<br>Ø 10–12</th><th>fz min<br>Ø 16–20</th><th>fz maks<br>Ø 16–20</th><th>Maks ap<br>(× Ø)</th><th>kc<br>N/mm²</th><th>vc maks<br>m/min</th><th>Fresretning</th><th>Tendens</th><th>Merknad</th><th></th></tr>`;
+  state.materials.forEach((m,i)=>{
+    const f = (v)=>String(v).replace(".",",");
+    html += `<tr data-i="${i}">
+      <td>${i+1}</td>
+      <td><input class="n" data-f="n" value="${esc(m.n)}"></td>
+      <td><input class="t" data-f="g" value="${esc(m.g)}"></td>
+      <td><input data-f="fz00" value="${f(m.fz[0][0])}"></td><td><input data-f="fz01" value="${f(m.fz[0][1])}"></td>
+      <td><input data-f="fz10" value="${f(m.fz[1][0])}"></td><td><input data-f="fz11" value="${f(m.fz[1][1])}"></td>
+      <td><input data-f="fz20" value="${f(m.fz[2][0])}"></td><td><input data-f="fz21" value="${f(m.fz[2][1])}"></td>
+      <td><input data-f="ap" value="${f(m.ap)}"></td>
+      <td><input data-f="kc" value="${m.kc}"></td>
+      <td><input data-f="vc" value="${m.vc}"></td>
+      <td><input class="t" data-f="ret" value="${esc(m.ret)}"></td>
+      <td><input class="t" data-f="tend" value="${esc(m.tend)}"></td>
+      <td><input class="t" data-f="merk" value="${esc(m.merk)}"></td>
+      <td><button class="btn sm del" onclick="delMaterial(${i})">slett</button></td></tr>`;
+  });
+  $("m_table").innerHTML = html;
+}
+function readMaterialsFromTable(){
+  const rows = [...$("m_table").querySelectorAll("tr[data-i]")];
+  const out = [];
+  for(const tr of rows){
+    const g = f => tr.querySelector(`[data-f="${f}"]`).value;
+    const n = f => num(g(f));
+    const m = {n:g("n").trim(), g:g("g").trim(), fz:[[n("fz00"),n("fz01")],[n("fz10"),n("fz11")],[n("fz20"),n("fz21")]], ap:n("ap"), kc:n("kc"), vc:n("vc"), ret:g("ret"), tend:g("tend"), merk:g("merk")};
+    if(!m.n) continue;
+    const nums = [...m.fz.flat(), m.ap, m.kc, m.vc];
+    if(nums.some(v=>!(v>0))) return {error:"Ugyldig tall i «"+m.n+"» – bruk komma eller punktum, alle tall må være > 0"};
+    out.push(m);
+  }
+  return {materials:out};
+}
+function saveMaterials(){
+  const r = readMaterialsFromTable();
+  if(r.error){ $("m_status").textContent = r.error; return; }
+  state.materials = r.materials; const ok = persist();
+  $("m_status").textContent = ok ? "Lagret "+new Date().toLocaleTimeString("nb-NO") : "Kunne ikke lagre (nettleseren tillater ikke lokal lagring) – eksporter JSON i stedet";
+  fillMaterialSelect(); render(); renderBor(); renderMaterials();
+}
+function addMaterial(){
+  const r = readMaterialsFromTable(); if(!r.error) state.materials = r.materials;
+  state.materials.push({n:"Nytt materiale",g:"Egne",fz:[[0.10,0.20],[0.15,0.30],[0.25,0.45]],ap:1.0,kc:50,vc:9999,ret:"Medfres",tend:"",merk:""});
+  renderMaterials(); $("m_status").textContent="Rad lagt til – fyll inn og trykk Lagre";
+}
+function delMaterial(i){
+  const r = readMaterialsFromTable(); if(!r.error) state.materials = r.materials;
+  if(state.materials.length<=1) return;
+  state.materials.splice(i,1); renderMaterials(); $("m_status").textContent="Rad fjernet – trykk Lagre for å beholde endringen";
+}
+function resetMaterials(){
+  state.materials = JSON.parse(JSON.stringify(DEF_MAT)); persist();
+  fillMaterialSelect(); render(); renderBor(); renderMaterials(); $("m_status").textContent="Standardverdier lagt tilbake";
+}
+
+/* ===================== mine freser ===================== */
+function renderTools(){
+  let html = `<tr><th>Navn</th><th>Ø (mm)</th><th>z</th><th>n maks (o/min)</th><th>Notat</th><th></th><th></th></tr>`;
+  state.tools.forEach((t,i)=>{
+    html += `<tr data-i="${i}"><td><input class="n" data-f="n" value="${esc(t.n)}"></td><td><input data-f="D" value="${String(t.D).replace(".",",")}"></td><td><input data-f="z" value="${t.z}"></td><td><input data-f="nmax" value="${t.nmax||""}"></td><td><input class="t" data-f="note" value="${esc(t.note||"")}"></td><td><button class="btn sm" onclick="useTool(${i})">Bruk</button></td><td><button class="btn sm del" onclick="delTool(${i})">slett</button></td></tr>`;
+  });
+  $("t_table").innerHTML = html;
+}
+function readToolsFromTable(){
+  const rows=[...$("t_table").querySelectorAll("tr[data-i]")]; const out=[];
+  for(const tr of rows){ const g=f=>tr.querySelector(`[data-f="${f}"]`).value; const t={n:g("n").trim(),D:num(g("D")),z:num(g("z")),nmax:num(g("nmax"))||0,note:g("note")}; if(!t.n) continue; if(!(t.D>0&&t.z>0)) return {error:"Ø og z må være tall > 0 for «"+t.n+"»"}; out.push(t); }
+  return {tools:out};
+}
+function saveTools(){ const r=readToolsFromTable(); if(r.error){ $("t_status").textContent=r.error; return; } state.tools=r.tools; const ok=persist(); $("t_status").textContent= ok?"Lagret "+new Date().toLocaleTimeString("nb-NO"):"Kunne ikke lagre lokalt – eksporter JSON"; fillToolSelect(); renderTools(); }
+function addTool(){ const r=readToolsFromTable(); if(!r.error) state.tools=r.tools; state.tools.push({n:"Ny fres",D:12,z:2,nmax:0,note:""}); renderTools(); }
+function delTool(i){ const r=readToolsFromTable(); if(!r.error) state.tools=r.tools; state.tools.splice(i,1); renderTools(); $("t_status").textContent="Fjernet – trykk Lagre for å beholde"; }
+function useTool(i){ const r=readToolsFromTable(); if(!r.error) state.tools=r.tools; const t=state.tools[i]; if(!t) return; $("i_D").value=String(t.D).replace(".",","); $("i_z").value=t.z; $("i_ntool").value=t.nmax||""; showTab("kalk"); render(); }
+
+/* ===================== eksport / import ===================== */
+function exportJSON(){
+  const blob = new Blob([JSON.stringify({materials:state.materials,tools:state.tools,bor:state.bor,inp:state.inp},null,1)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="DKHH_mating_innstillinger.json"; document.body.appendChild(a); a.click(); a.remove();
+}
+function importJSON(file){
+  if(!file) return; const r=new FileReader();
+  r.onload=()=>{ try{ const o=JSON.parse(r.result); if(Array.isArray(o.materials)&&o.materials.length) state.materials=o.materials; if(Array.isArray(o.tools)) state.tools=o.tools; if(Array.isArray(o.bor)&&o.bor.length) state.bor=o.bor; if(o.inp) state.inp=o.inp; persist(); fillMaterialSelect(); fillToolSelect(); restoreInputs(); render(); renderBor(); renderMaterials(); renderTools(); renderBorTable(); $("m_status").textContent="Importert fra "+file.name; }catch(e){ $("m_status").textContent="Kunne ikke lese fila: "+e.message; } };
+  r.readAsText(file);
+}
+
+/* ===================== faner ===================== */
+function showTab(id){
+  document.querySelectorAll("section.tab").forEach(s=>s.classList.toggle("active", s.id==="tab-"+id));
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active", b.dataset.tab===id));
+  if(id==="hurtig") renderHurtig();
+}
+$("nav").addEventListener("click", e=>{ const b=e.target.closest("button"); if(b) showTab(b.dataset.tab); });
+// tabelloverskriftene låses rett under fanelinja, som kan gå over flere linjer i smalt vindu
+function setNavH(){ document.documentElement.style.setProperty("--navh", $("nav").offsetHeight+"px"); }
+window.addEventListener("resize", setNavH); setNavH();
+
+/* ===================== start ===================== */
+loadAll();
+fillMaterialSelect(); fillToolSelect(); restoreInputs();
+INP.forEach(id=>{ $(id).addEventListener("input", render); $(id).addEventListener("change", render); });
+$("i_tool").addEventListener("change", e=>{ if(e.target.value!=="") useTool(Number(e.target.value)); });
+BINP.forEach(id=>{ $(id).addEventListener("input", renderBor); $(id).addEventListener("change", renderBor); });
+// bytte av bortype: foreslå en Ø som passer typen
+$("b_type").addEventListener("change", e=>{ const D=num($("b_D").value); if(e.target.value==="2"){ if(!(D>=15)){ $("b_D").value="35"; $("b_dyp").value="13"; } } else if(D>20) $("b_D").value="8"; renderBor(); });
+render(); renderBor(); renderMaterials(); renderTools(); renderBorTable();
+</script>
+</body>
+</html>
